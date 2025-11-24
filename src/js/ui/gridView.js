@@ -10,28 +10,19 @@ export function initGrid() {
     const { cols, rows, cells } = state;
     root.innerHTML = "";
   
-    // 建立外層 2D Grid（多一行多一列用來放序號）
     const wrapper = createElement("div", "grid-wrapper");
-    wrapper.style.display = "grid";
-    wrapper.style.gridTemplateColumns = `auto repeat(${cols}, var(--cell-size))`;
-    wrapper.style.gridTemplateRows = `auto repeat(${rows}, var(--cell-size))`;
-    wrapper.style.gap = "4px";
   
-    // 左上角佔位空白（避免 row/col 標籤重疊）
+    // 空白左上角
     wrapper.appendChild(createElement("div"));
   
-    // 欄序 Column Labels（1,2,3,4,5...）
+    // 欄序
     for (let c = 1; c <= cols; c++) {
-      const label = createElement("div", "grid-col-label", c);
-      wrapper.appendChild(label);
+      wrapper.appendChild(createElement("div", "grid-col-label", c));
     }
   
-    // 每一列 Row + Cell
+    // 每列 + cell
     for (let r = 0; r < rows; r++) {
-      // Row Label（1,2,3,4,...）
-      const label = createElement("div", "grid-row-label", r + 1);
-      wrapper.appendChild(label);
-  
+      wrapper.appendChild(createElement("div", "grid-row-label", r + 1));
       for (let c = 0; c < cols; c++) {
         const index = r * cols + c;
         const cell = cells[index];
@@ -43,9 +34,7 @@ export function initGrid() {
         }
   
         cellEl.addEventListener("click", () => {
-          const current = store.getState().cells[index];
-          const existing = current.value ?? "";
-  
+          const existing = cell.value ?? "";
           const input = prompt("輸入號碼（留空清除）", existing);
           if (input === null) return;
   
@@ -71,11 +60,11 @@ export function initGrid() {
     root.appendChild(wrapper);
   };
 
-
   // 初次渲染
   render(store.getState());
   // 訂閱後續更新
   store.subscribe(render);
 }
+
 
 
