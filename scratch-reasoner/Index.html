@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>刮刮樂推理器</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="./src/styles/main.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- 頂部標題列 -->
+    <header class="app-header">
+      <h1 class="app-title">刮刮樂推理器</h1>
+      <span class="app-subtitle">純前端 · 手機優先 · 可擴充</span>
+    </header>
+
+    <!-- 控制區：選擇版型、重置等等 -->
+    <section class="controls" id="controls-root">
+      <!-- 由 JS 注入（保持 HTML 乾淨） -->
+    </section>
+
+    <!-- 主內容：左邊格子、右邊統計（手機會堆疊成上下） -->
+    <main class="app-main">
+      <section class="grid-panel">
+        <div id="grid-root" class="grid-root">
+          <!-- JS 產生格子 -->
+        </div>
+      </section>
+
+      <aside class="stats-panel" id="stats-root">
+        <!-- JS 產生 heatmap / 信心度 / 推薦下一格 -->
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./src/js/main.js"></script>
+</body>
+</html>
