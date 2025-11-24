@@ -10,7 +10,7 @@
   --radius-md: 10px;
   --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.4);
 
-  --cell-size: 36px; /* 手機預設格子尺寸，之後可動態調整 */
+  --cell-size: 36px;
   --gap-sm: 8px;
   --gap-md: 12px;
   --gap-lg: 16px;
@@ -29,7 +29,7 @@ body {
   color: var(--text);
 }
 
-/* 整體容器：手機佔滿寬度，桌機置中 */
+/* app layout */
 .app {
   min-height: 100vh;
   max-width: 960px;
@@ -40,7 +40,6 @@ body {
   gap: var(--gap-md);
 }
 
-/* 標題區 */
 .app-header {
   padding: 10px 14px;
   border-radius: var(--radius-lg);
@@ -63,7 +62,6 @@ body {
   color: var(--text-muted);
 }
 
-/* 控制區 */
 .controls {
   padding: 10px 12px;
   border-radius: var(--radius-lg);
@@ -75,7 +73,6 @@ body {
   align-items: center;
 }
 
-/* 主體區域：手機直向為上下堆疊，平板以上改側邊排列 */
 .app-main {
   display: flex;
   flex-direction: column;
@@ -83,20 +80,24 @@ body {
   flex: 1;
 }
 
-/* Grid 區塊 */
 .grid-panel {
   border-radius: var(--radius-lg);
   background: rgba(15, 23, 42, 0.98);
   border: 1px solid var(--border-subtle);
   padding: 10px;
   box-shadow: var(--shadow-soft);
+
+  /* ✅ 最重要：允許多方向捲動 */
   overflow: auto;
-  display: block;        /* ✅ 取消 flex/grid 對齊影響 */
-  -webkit-overflow-scrolling: touch; /* ✅ iOS 惯性滑动 */
-  touch-action: pan-x pan-y; /* ✅ 避免滑动被点选阻挡 */
+  display: block;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+
+  /* ✅ 讓手機能看到大表格 */
+  max-width: 100%;
+  max-height: 75vh;
 }
 
-/* 統計區塊 */
 .stats-panel {
   border-radius: var(--radius-lg);
   background: rgba(15, 23, 42, 0.98);
@@ -105,29 +106,43 @@ body {
   box-shadow: var(--shadow-soft);
 }
 
-/* 手機以上寬度，改成左右並排 */
 @media (min-width: 768px) {
   .app-main {
     flex-direction: row;
   }
-
   .grid-panel {
     flex: 2;
+    max-height: none;
   }
-
   .stats-panel {
     flex: 1;
   }
 }
 
-/* 格子容器：之後用 JS 設定 grid-template-columns */
-.grid-root {
+/* ✅ wrapper — 讓表格依內容自然展開 */
+.grid-wrapper {
   display: grid;
+  width: max-content;
+  height: max-content;
   gap: 4px;
+}
+
+/* ✅ column & row labels */
+.grid-col-label,
+.grid-row-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-align: center;
+  user-select: none;
+}
+
+.grid-row-label {
+  display: flex;
+  align-items: center;
   justify-content: center;
 }
 
-/* 單一格子 */
+/* ✅ cell */
 .grid-cell {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -148,7 +163,6 @@ body {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
 }
 
-/* 已輸入（已刮）的格子狀態，之後在 JS 控制 class */
 .grid-cell--revealed {
   background: var(--accent-soft);
   border-color: var(--accent);
@@ -156,7 +170,6 @@ body {
   font-weight: 600;
 }
 
-/* 控制區內基本按鈕樣式 */
 .btn {
   border: none;
   border-radius: 999px;
@@ -174,7 +187,6 @@ body {
   background: rgba(249, 115, 22, 0.2);
 }
 
-/* 下拉選單 */
 .select {
   background: #020617;
   color: var(--text);
@@ -184,7 +196,6 @@ body {
   font-size: 0.8rem;
 }
 
-/* stats panel placeholder 文字 */
 .stats-section-title {
   font-size: 0.85rem;
   color: var(--text-muted);
@@ -195,28 +206,4 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
   opacity: 0.85;
-}
-
-.grid-col-label,
-.grid-row-label {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-align: center;
-  user-select: none;
-}
-
-.grid-row-label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.grid-wrapper {
-  width: max-content;
-  height: max-content;
-}
-
-#grid-root {
-  display: block;        /* ✅ 讓 wrapper 的寬度自然展開 */
-  overflow: visible;
 }
