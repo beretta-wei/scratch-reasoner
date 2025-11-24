@@ -91,6 +91,7 @@ body {
   padding: 10px;
   box-shadow: var(--shadow-soft);
   overflow: auto;
+  display: block;        /* ✅ 取消 flex/grid 對齊影響 */
   -webkit-overflow-scrolling: touch; /* ✅ iOS 惯性滑动 */
   touch-action: pan-x pan-y; /* ✅ 避免滑动被点选阻挡 */
 }
@@ -213,4 +214,9 @@ body {
 .grid-wrapper {
   width: max-content;
   height: max-content;
+}
+
+#grid-root {
+  display: block;        /* ✅ 讓 wrapper 的寬度自然展開 */
+  overflow: visible;
 }
