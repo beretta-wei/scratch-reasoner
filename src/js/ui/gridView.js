@@ -11,7 +11,7 @@ export function initGrid() {
     root.innerHTML = "";
   
     // 建立外層 2D Grid（多一行多一列用來放序號）
-    const wrapper = createElement("div");
+    const wrapper = createElement("div", "grid-wrapper");
     wrapper.style.display = "grid";
     wrapper.style.gridTemplateColumns = `auto repeat(${cols}, var(--cell-size))`;
     wrapper.style.gridTemplateRows = `auto repeat(${rows}, var(--cell-size))`;
@@ -77,4 +77,5 @@ export function initGrid() {
   // 訂閱後續更新
   store.subscribe(render);
 }
+
 
