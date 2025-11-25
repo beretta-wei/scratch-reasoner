@@ -1,5 +1,6 @@
 import { store } from "../core/state.js";
 import { $, createElement } from "../utils/dom.js";
+import { openNumberPadForCell } from "./numberPadView.js";
 
 export function initGrid() {
   const root = $("#grid-root");
@@ -9,10 +10,6 @@ export function initGrid() {
     root.innerHTML = "";
 
     const wrapper = createElement("div", "grid-wrapper");
-    wrapper.style.display = "grid";
-    wrapper.style.gridTemplateColumns = "auto repeat(" + String(cols) + ", var(--cell-size))";
-    wrapper.style.gridTemplateRows = "auto repeat(" + String(rows) + ", var(--cell-size))";
-    wrapper.style.gap = "4px";
 
     // 左上角空白
     wrapper.appendChild(createElement("div"));
@@ -37,10 +34,7 @@ export function initGrid() {
         }
 
         cellEl.onclick = () => {
-          const input = prompt("輸入（留空清除）", cell.value ?? "");
-          if (input === null) return;
-          const trimmed = input.trim();
-          store.setCellValue(index, trimmed === "" ? null : Number(trimmed));
+          openNumberPadForCell(index);
         };
 
         wrapper.appendChild(cellEl);
