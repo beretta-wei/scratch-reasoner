@@ -9,6 +9,10 @@ export function initGrid() {
     root.innerHTML = "";
 
     const wrapper = createElement("div", "grid-wrapper");
+    wrapper.style.display = "grid";
+    wrapper.style.gridTemplateColumns = "auto repeat(" + String(cols) + ", var(--cell-size))";
+    wrapper.style.gridTemplateRows = "auto repeat(" + String(rows) + ", var(--cell-size))";
+    wrapper.style.gap = "4px";
 
     // 左上角空白
     wrapper.appendChild(createElement("div"));
