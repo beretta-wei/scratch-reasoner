@@ -6,7 +6,7 @@ export function initGrid() {
   const root = $("#grid-root");
 
   const render = () => {
-    const { cols, rows, cells } = store.getState();
+    const { cols, rows, cells, showIndex } = store.getState();
     root.innerHTML = "";
 
     const wrapper = createElement("div", "grid-wrapper");
@@ -32,9 +32,15 @@ export function initGrid() {
         const cell = cells[index];
 
         const cellEl = createElement("div", "grid-cell");
-        if (cell.revealed) {
+        if (cell && cell.revealed) {
           cellEl.classList.add("grid-cell--revealed");
           cellEl.textContent = cell.value;
+        }
+
+        if (showIndex) {
+          const idxEl = createElement("div", "grid-cell-index");
+          idxEl.textContent = index + 1; // 1-based
+          cellEl.appendChild(idxEl);
         }
 
         cellEl.onclick = () => {
