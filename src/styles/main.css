@@ -58,7 +58,7 @@ body {
 }
 
 .app-subtitle {
-  font-size: 1rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
 }
 
@@ -259,7 +259,7 @@ body {
 }
 
 .number-pad-number {
-  border-radius: 999px;
+  border-radius: 10px;
   border: 1px solid var(--border-subtle);
   background: #020617;
   color: var(--text);
