@@ -3,68 +3,49 @@ import { $, createElement } from "../utils/dom.js";
 
 export function initGrid() {
   const root = $("#grid-root");
-  if (!root) return;
 
-  // 初次繪製 + 之後狀態變動時重新渲染
-  const render = (state) => {
-    const { cols, rows, cells } = state;
+  const render = () => {
+    const { cols, rows, cells } = store.getState();
     root.innerHTML = "";
-  
+
     const wrapper = createElement("div", "grid-wrapper");
-  
-    // 空白左上角
+
+    // 左上角空白
     wrapper.appendChild(createElement("div"));
-  
+
     // 欄序
     for (let c = 1; c <= cols; c++) {
       wrapper.appendChild(createElement("div", "grid-col-label", c));
     }
-  
-    // 每列 + cell
+
+    // 列序 + cells
     for (let r = 0; r < rows; r++) {
       wrapper.appendChild(createElement("div", "grid-row-label", r + 1));
+
       for (let c = 0; c < cols; c++) {
         const index = r * cols + c;
         const cell = cells[index];
-  
+
         const cellEl = createElement("div", "grid-cell");
         if (cell.revealed) {
           cellEl.classList.add("grid-cell--revealed");
           cellEl.textContent = cell.value;
         }
-  
-        cellEl.addEventListener("click", () => {
-          const existing = cell.value ?? "";
-          const input = prompt("輸入號碼（留空清除）", existing);
+
+        cellEl.onclick = () => {
+          const input = prompt("輸入（留空清除）", cell.value ?? "");
           if (input === null) return;
-  
           const trimmed = input.trim();
-          if (trimmed === "") {
-            store.setCellValue(index, null);
-            return;
-          }
-  
-          const num = Number(trimmed);
-          if (!Number.isInteger(num) || num <= 0) {
-            alert("請輸入正整數");
-            return;
-          }
-  
-          store.setCellValue(index, num);
-        });
-  
+          store.setCellValue(index, trimmed === "" ? null : Number(trimmed));
+        };
+
         wrapper.appendChild(cellEl);
       }
     }
-  
+
     root.appendChild(wrapper);
   };
 
-  // 初次渲染
-  render(store.getState());
-  // 訂閱後續更新
+  render();
   store.subscribe(render);
 }
-
-
-
