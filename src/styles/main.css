@@ -87,13 +87,11 @@ body {
   padding: 10px;
   box-shadow: var(--shadow-soft);
 
-  /* ✅ 最重要：允許多方向捲動 */
   overflow: auto;
   display: block;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
 
-  /* ✅ 讓手機能看到大表格 */
   max-width: 100%;
   max-height: 75vh;
 }
@@ -119,15 +117,16 @@ body {
   }
 }
 
-/* ✅ wrapper — 讓表格依內容自然展開 */
+/* ✅ wrapper — controls full grid layout */
 .grid-wrapper {
   display: grid;
+  grid-auto-flow: row;
+  gap: 4px;
   width: max-content;
   height: max-content;
-  gap: 4px;
 }
 
-/* ✅ column & row labels */
+/* ✅ row / col labels */
 .grid-col-label,
 .grid-row-label {
   font-size: 0.7rem;
@@ -142,7 +141,7 @@ body {
   justify-content: center;
 }
 
-/* ✅ cell */
+/* ✅ grid cells */
 .grid-cell {
   width: var(--cell-size);
   height: var(--cell-size);
@@ -170,6 +169,7 @@ body {
   font-weight: 600;
 }
 
+/* ui elements */
 .btn {
   border: none;
   border-radius: 999px;
