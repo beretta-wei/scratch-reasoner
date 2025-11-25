@@ -4,12 +4,15 @@ import { $, createElement } from "../utils/dom.js";
 export function initControls() {
   const presetSelect = $("#preset-select");
 
-  presetSelect.onchange = (e) => {
-    const preset = e.target.value;
-    store.setPreset(preset);
-  };
+  // ✅ 若不存在，安全跳過
+  if (presetSelect) {
+    presetSelect.onchange = (e) => {
+      const preset = e.target.value;
+      store.setPreset(preset);
+    };
+  }
 
-  // ===== 新增：Index 顯示切換開關 =====
+  // ===== Index 顯示切換開關 =====
   const controlsContainer = $(".controls");
   const indexToggleWrapper = createElement("label", "control-toggle");
   const indexToggle = createElement("input");

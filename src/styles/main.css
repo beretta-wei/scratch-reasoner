@@ -48,7 +48,7 @@ body {
   box-shadow: var(--shadow-soft);
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .app-title {
@@ -121,7 +121,7 @@ body {
 .grid-wrapper {
   display: grid;
   grid-auto-flow: row;
-  gap: 6px;
+  gap: 4px;
   width: max-content;
   height: max-content;
 }
@@ -180,7 +180,7 @@ body {
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .btn:hover {
@@ -206,115 +206,4 @@ body {
   font-size: 0.8rem;
   color: var(--text-muted);
   opacity: 0.85;
-}
-
-/* ========== Number Pad (底部選號面板) ========== */
-.number-pad-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.65);
-  display: none;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.number-pad-overlay--open {
-  display: flex;
-}
-
-.number-pad-sheet {
-  width: 100%;
-  max-width: 520px;
-  background: rgba(15, 23, 42, 0.98);
-  border-radius: 16px 16px 0 0;
-  padding: 8px 12px 10px;
-  border-top: 1px solid var(--border-subtle);
-  box-shadow: var(--shadow-soft);
-}
-
-.number-pad-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-}
-
-.number-pad-close {
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.number-pad-grid {
-  margin-top: 6px;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.number-pad-number {
-  border-radius: 10px;
-  border: 1px solid var(--border-subtle);
-  background: #020617;
-  color: var(--text);
-  font-size: 1rem;
-  padding: 10px 0;
-  text-align: center;
-  cursor: pointer;
-}
-
-.number-pad-number:hover {
-  border-color: var(--accent);
-}
-
-.number-pad-number--used {
-  background: #111827;
-  color: var(--text-muted);
-  border-color: #111827;
-  cursor: default;
-}
-
-.number-pad-number--current {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--text);
-  font-weight: 600;
-}
-
-.number-pad-actions {
-  margin-top: 8px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.btn.btn-ghost {
-  background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--border-subtle);
-}
-
-.btn.btn-ghost:hover {
-  background: rgba(148, 163, 184, 0.08);
-}
-
-/* ====== Grid Index Overlay ====== */
-.grid-cell {
-  position: relative;
-}
-
-.grid-cell-index {
-  position: absolute;
-  top: 2px;
-  right: 4px;
-  font-size: 0.55rem;
-  color: var(--text-muted);
-  opacity: 0.9;
-  pointer-events: none; /* ✅ 不阻擋點擊 */
 }
