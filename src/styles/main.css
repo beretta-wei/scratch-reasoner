@@ -304,3 +304,17 @@ body {
   background: rgba(148, 163, 184, 0.08);
 }
 
+/* ====== Grid Index Overlay ====== */
+.grid-cell {
+  position: relative;
+}
+
+.grid-cell-index {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  opacity: 0.9;
+  pointer-events: none; /* ✅ 不阻擋點擊 */
+}
