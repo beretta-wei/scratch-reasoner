@@ -1,7 +1,7 @@
 import { GRID_PRESETS, DEFAULT_PRESET_ID } from "../config/gridPresets.js";
 
 function createInitialState() {
-  const preset = GRID_PRESETS.find(p => p.id === DEFAULT_PRESET_ID) || GRID_PRESETS[0];
+  const preset = GRID_PRESETS.find(p => p.id === DEFAULT_PRESET_ID);
   const total = preset.cols * preset.rows;
 
   return {
@@ -12,87 +12,57 @@ function createInitialState() {
       index: i,
       value: null,
       revealed: false
-    })),
-    showIndex: false
+    }))
   };
 }
 
 class Store {
-  constructor() {
-    this.state = createInitialState();
-    this.listeners = new Set();
+  #state = createInitialState();
+  #listeners = new Set();
+
+  subscribe(fn) {
+    this.#listeners.add(fn);
+    return () => this.#listeners.delete(fn);
   }
 
   getState() {
-    return this.state;
-  }
-
-  subscribe(fn) {
-    this.listeners.add(fn);
-    return () => this.listeners.delete(fn);
-  }
-
-  _emit() {
-    for (const fn of this.listeners) {
-      try {
-        fn();
-      } catch (e) {
-        console.error("store listener error", e);
-      }
-    }
+    return this.#state;
   }
 
   update(patch) {
-    this.state = { ...this.state, ...patch };
-    this._emit();
+    this.#state = { ...this.#state, ...patch };
+    this.#listeners.forEach(fn => fn(this.#state));
   }
 
-  setPreset(presetId) {
-    const preset = GRID_PRESETS.find(p => p.id === presetId);
+  setGridPreset(id) {
+    const preset = GRID_PRESETS.find(p => p.id === id);
     if (!preset) return;
+
     const total = preset.cols * preset.rows;
-    const cells = Array.from({ length: total }, (_, i) => ({
-      index: i,
-      value: null,
-      revealed: false
-    }));
     this.update({
-      gridPresetId: preset.id,
+      gridPresetId: id,
       cols: preset.cols,
       rows: preset.rows,
-      cells
+      cells: Array.from({ length: total }, (_, i) => ({
+        index: i,
+        value: null,
+        revealed: false
+      }))
     });
   }
 
   setCellValue(index, value) {
-    const { cells } = this.state;
-    if (index < 0 || index >= cells.length) return;
-
-    const updated = cells.slice();
-    let numeric = null;
-    if (value !== null && value !== "") {
-      const num = Number(value);
-      if (!Number.isNaN(num)) {
-        numeric = num;
-      }
-    }
-
+    const updated = [...this.#state.cells];
     updated[index] = {
       ...updated[index],
-      value: numeric,
-      revealed: numeric !== null
+      value,
+      revealed: value !== null
     };
-
     this.update({ cells: updated });
   }
 
-  setShowIndex(flag) {
-    this.update({ showIndex: !!flag });
-  }
-
   reset() {
-    this.state = createInitialState();
-    this._emit();
+    this.update(createInitialState());
   }
 }
 

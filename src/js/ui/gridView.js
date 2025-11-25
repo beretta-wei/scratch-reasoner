@@ -1,14 +1,19 @@
 import { store } from "../core/state.js";
 import { $, createElement } from "../utils/dom.js";
+import { openNumberPadForCell } from "./numberPadView.js";
 
 export function initGrid() {
   const root = $("#grid-root");
 
   const render = () => {
-    const { cols, rows, cells, showIndex } = store.getState();
+    const { cols, rows, cells } = store.getState();
     root.innerHTML = "";
 
     const wrapper = createElement("div", "grid-wrapper");
+    wrapper.style.display = "grid";
+    wrapper.style.gridTemplateColumns = "auto repeat(" + String(cols) + ", var(--cell-size))";
+    wrapper.style.gridTemplateRows = "auto repeat(" + String(rows) + ", var(--cell-size))";
+    wrapper.style.gap = "4px";
 
     // 左上角空白
     wrapper.appendChild(createElement("div"));
@@ -20,7 +25,6 @@ export function initGrid() {
 
     // 列序 + cells
     for (let r = 0; r < rows; r++) {
-      // 列標
       wrapper.appendChild(createElement("div", "grid-row-label", r + 1));
 
       for (let c = 0; c < cols; c++) {
@@ -28,23 +32,14 @@ export function initGrid() {
         const cell = cells[index];
 
         const cellEl = createElement("div", "grid-cell");
-        if (cell && cell.revealed) {
+        if (cell.revealed) {
           cellEl.classList.add("grid-cell--revealed");
           cellEl.textContent = cell.value;
         }
 
         cellEl.onclick = () => {
-          const input = prompt("輸入（留空清除）", cell && cell.value != null ? String(cell.value) : "");
-          if (input === null) return;
-          const trimmed = input.trim();
-          store.setCellValue(index, trimmed === "" ? null : Number(trimmed));
+          openNumberPadForCell(index);
         };
-
-        if (showIndex) {
-          const idxEl = createElement("div", "grid-cell-index");
-          idxEl.textContent = index + 1; // 1-based 顯示
-          cellEl.appendChild(idxEl);
-        }
 
         wrapper.appendChild(cellEl);
       }
