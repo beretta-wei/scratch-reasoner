@@ -1,63 +1,58 @@
 import { store } from "../core/state.js";
 import { $, createElement } from "../utils/dom.js";
-import { openNumberPadForCell } from "./numberPadView.js";
-
-let gridRoot = null;
 
 export function initGrid() {
-  gridRoot = $("#grid-root");
-  store.subscribe(renderGrid);
-  renderGrid();
-}
+  const root = $("#grid-root");
 
-function renderGrid() {
-  if (!gridRoot) return;
-  const { rows, cols, cells, showIndex } = store.getState();
+  const render = () => {
+    const { cols, rows, cells, showIndex } = store.getState();
+    root.innerHTML = "";
 
-  gridRoot.innerHTML = "";
-  const wrapper = createElement("div", "grid-wrapper");
+    const wrapper = createElement("div", "grid-wrapper");
 
-  // 先放左上角空白
-  const corner = createElement("div", "grid-corner");
-  wrapper.appendChild(corner);
+    // 左上角空白
+    wrapper.appendChild(createElement("div"));
 
-  // 欄標
-  for (let c = 1; c <= cols; c++) {
-    const colLabel = createElement("div", "grid-col-label");
-    colLabel.textContent = c;
-    wrapper.appendChild(colLabel);
-  }
-
-  // 每一列
-  for (let r = 1; r <= rows; r++) {
-    const rowLabel = createElement("div", "grid-row-label");
-    rowLabel.textContent = r;
-    wrapper.appendChild(rowLabel);
-
+    // 欄序
     for (let c = 1; c <= cols; c++) {
-      const index0 = (r - 1) * cols + (c - 1); // 0-based
-      const cell = cells[index0];
-
-      const cellEl = createElement("div", "grid-cell");
-
-      if (cell && cell.value != null) {
-        cellEl.textContent = cell.value;
-        cellEl.classList.add("grid-cell--revealed");
-      }
-
-      if (showIndex) {
-        const idxEl = createElement("div", "grid-cell-index");
-        idxEl.textContent = index0 + 1; // 顯示 1-based
-        cellEl.appendChild(idxEl);
-      }
-
-      cellEl.onclick = () => {
-        openNumberPadForCell(index0);
-      };
-
-      wrapper.appendChild(cellEl);
+      wrapper.appendChild(createElement("div", "grid-col-label", c));
     }
-  }
 
-  gridRoot.appendChild(wrapper);
+    // 列序 + cells
+    for (let r = 0; r < rows; r++) {
+      // 列標
+      wrapper.appendChild(createElement("div", "grid-row-label", r + 1));
+
+      for (let c = 0; c < cols; c++) {
+        const index = r * cols + c;
+        const cell = cells[index];
+
+        const cellEl = createElement("div", "grid-cell");
+        if (cell && cell.revealed) {
+          cellEl.classList.add("grid-cell--revealed");
+          cellEl.textContent = cell.value;
+        }
+
+        cellEl.onclick = () => {
+          const input = prompt("輸入（留空清除）", cell && cell.value != null ? String(cell.value) : "");
+          if (input === null) return;
+          const trimmed = input.trim();
+          store.setCellValue(index, trimmed === "" ? null : Number(trimmed));
+        };
+
+        if (showIndex) {
+          const idxEl = createElement("div", "grid-cell-index");
+          idxEl.textContent = index + 1; // 1-based 顯示
+          cellEl.appendChild(idxEl);
+        }
+
+        wrapper.appendChild(cellEl);
+      }
+    }
+
+    root.appendChild(wrapper);
+  };
+
+  render();
+  store.subscribe(render);
 }
