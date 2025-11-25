@@ -1,51 +1,63 @@
 import { store } from "../core/state.js";
 import { $, createElement } from "../utils/dom.js";
+import { openNumberPadForCell } from "./numberPadView.js";
+
+let gridRoot = null;
 
 export function initGrid() {
-  const root = $("#grid-root");
+  gridRoot = $("#grid-root");
+  store.subscribe(renderGrid);
+  renderGrid();
+}
 
-  const render = () => {
-    const { cols, rows, cells } = store.getState();
-    root.innerHTML = "";
+function renderGrid() {
+  if (!gridRoot) return;
+  const { rows, cols, cells, showIndex } = store.getState();
 
-    const wrapper = createElement("div", "grid-wrapper");
+  gridRoot.innerHTML = "";
+  const wrapper = createElement("div", "grid-wrapper");
 
-    // 左上角空白
-    wrapper.appendChild(createElement("div"));
+  // 先放左上角空白
+  const corner = createElement("div", "grid-corner");
+  wrapper.appendChild(corner);
 
-    // 欄序
+  // 欄標
+  for (let c = 1; c <= cols; c++) {
+    const colLabel = createElement("div", "grid-col-label");
+    colLabel.textContent = c;
+    wrapper.appendChild(colLabel);
+  }
+
+  // 每一列
+  for (let r = 1; r <= rows; r++) {
+    const rowLabel = createElement("div", "grid-row-label");
+    rowLabel.textContent = r;
+    wrapper.appendChild(rowLabel);
+
     for (let c = 1; c <= cols; c++) {
-      wrapper.appendChild(createElement("div", "grid-col-label", c));
-    }
+      const index0 = (r - 1) * cols + (c - 1); // 0-based
+      const cell = cells[index0];
 
-    // 列序 + cells
-    for (let r = 0; r < rows; r++) {
-      wrapper.appendChild(createElement("div", "grid-row-label", r + 1));
+      const cellEl = createElement("div", "grid-cell");
 
-      for (let c = 0; c < cols; c++) {
-        const index = r * cols + c;
-        const cell = cells[index];
-
-        const cellEl = createElement("div", "grid-cell");
-        if (cell.revealed) {
-          cellEl.classList.add("grid-cell--revealed");
-          cellEl.textContent = cell.value;
-        }
-
-        cellEl.onclick = () => {
-          const input = prompt("輸入（留空清除）", cell.value ?? "");
-          if (input === null) return;
-          const trimmed = input.trim();
-          store.setCellValue(index, trimmed === "" ? null : Number(trimmed));
-        };
-
-        wrapper.appendChild(cellEl);
+      if (cell && cell.value != null) {
+        cellEl.textContent = cell.value;
+        cellEl.classList.add("grid-cell--revealed");
       }
+
+      if (showIndex) {
+        const idxEl = createElement("div", "grid-cell-index");
+        idxEl.textContent = index0 + 1; // 顯示 1-based
+        cellEl.appendChild(idxEl);
+      }
+
+      cellEl.onclick = () => {
+        openNumberPadForCell(index0);
+      };
+
+      wrapper.appendChild(cellEl);
     }
+  }
 
-    root.appendChild(wrapper);
-  };
-
-  render();
-  store.subscribe(render);
+  gridRoot.appendChild(wrapper);
 }
