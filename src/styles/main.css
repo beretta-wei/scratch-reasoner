@@ -390,3 +390,83 @@ body {
 .stats-panel {
   display: none;
 }
+
+
+/* ========== Lucky numbers picker ========== */
+.lucky-section {
+  margin-top: var(--gap-md);
+  padding-top: var(--gap-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.lucky-display {
+  flex: 1;
+  text-align: left;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lucky-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.lucky-overlay--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.lucky-sheet {
+  width: 100%;
+  max-width: 520px;
+  max-height: 80vh;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--gap-md);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+}
+
+.lucky-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.lucky-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.lucky-num-btn {
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-muted);
+  border-radius: var(--radius-md);
+  padding: 4px 0;
+  font-size: 0.8rem;
+}
+
+.lucky-num-btn.is-selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.lucky-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--gap-sm);
+}
