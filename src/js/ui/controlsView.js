@@ -6,6 +6,7 @@ import {
   setCurrentLabelName,
   addLabelName,
   createLogForCurrentState,
+  clearAllLogsFromStorage,
   setActiveLog,
   clearActiveLog,
   getLogsForCurrentView
