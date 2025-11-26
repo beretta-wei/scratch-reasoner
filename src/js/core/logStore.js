@@ -213,7 +213,7 @@ export function getLogsForCurrentView() {
 }
 
 export function clearAllLogsFromStorage() {
-  localStorage.removeItem(STORAGE_KEYS.LABEL_NAMES);
-  localStorage.removeItem(STORAGE_KEYS.LOGS);
-  localStorage.removeItem(STORAGE_KEYS.ACTIVE_LOG_ID);
+  localStorage.removeItem(LS_NAMES_KEY);
+  localStorage.removeItem(LS_LOGS_KEY);
+  localStorage.removeItem(LS_ACTIVE_KEY);
 }
