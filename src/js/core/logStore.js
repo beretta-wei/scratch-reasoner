@@ -211,3 +211,9 @@ export function getLogsForCurrentView() {
     .filter(l => l.labelName === label && l.cols * l.rows === total)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
+
+export function clearAllLogsFromStorage() {
+  localStorage.removeItem(STORAGE_KEYS.LABEL_NAMES);
+  localStorage.removeItem(STORAGE_KEYS.LOGS);
+  localStorage.removeItem(STORAGE_KEYS.ACTIVE_LOG_ID);
+}
