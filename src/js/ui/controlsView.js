@@ -8,6 +8,7 @@ import {
   createLogForCurrentState,
   setActiveLog,
   clearActiveLog,
+  clearAllLogsFromStorage,
   getLogsForCurrentView
 } from "../core/logStore.js";
 
@@ -165,7 +166,16 @@ export function initControls() {
   };
 
   bottomRow.appendChild(activeLabel);
-  bottomRow.appendChild(resetBtn);
+  
+const clearStorageBtn = createElement("button", "btn", "清除本機資料");
+clearStorageBtn.onclick = () => {
+  if (!window.confirm("確定要清除所有 Log 與本機資料？此操作無法復原。")) return;
+  clearAllLogsFromStorage();
+  store.reset();
+  renderLogsSelect();
+};
+bottomRow.appendChild(clearStorageBtn);
+bottomRow.appendChild(resetBtn);
 
   // === 渲染一開始的 Log 下拉與狀態 ===
   renderLogsSelect();

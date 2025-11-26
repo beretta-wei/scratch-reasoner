@@ -92,6 +92,12 @@ export function initLogStore() {
     logState.currentLabelName = logState.labelNames[0];
   }
 
+  // Auto-restore active log if exists
+  if (logState.activeLogId) {
+    setActiveLog(logState.activeLogId);
+  }
+
+
   // 監聽 grid 狀態變化，自動同步到目前 Log
   store.subscribe(() => {
     snapshotStateToActiveLog();
@@ -210,4 +216,18 @@ export function getLogsForCurrentView() {
   return logState.logs
     .filter(l => l.labelName === label && l.cols * l.rows === total)
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+}
+
+export function clearAllLogsFromStorage() {
+  logState = {
+    labelNames: [...DEFAULT_LABELS],
+    logs: [],
+    activeLogId: null,
+    currentLabelName: DEFAULT_LABELS[0] || ""
+  };
+  if (typeof localStorage !== "undefined") {
+    localStorage.removeItem(LS_NAMES_KEY);
+    localStorage.removeItem(LS_LOGS_KEY);
+    localStorage.removeItem(LS_ACTIVE_KEY);
+  }
 }
