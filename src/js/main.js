@@ -10,14 +10,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initGrid();
   initStats();
   initNumberPad();
-
-  // Auto-restore active log after UI init
-  setTimeout(() => {
-    try {
-      const { activeLogId } = getLogState();
-      if (activeLogId) {
-        setActiveLog(activeLogId);
-      }
-    } catch(e) { console.error(e); }
-  }, 0);
 });
