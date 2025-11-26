@@ -1,12 +1,13 @@
 import { store } from "../core/state.js";
 import { $, createElement } from "../utils/dom.js";
 import { openNumberPadForCell } from "./numberPadView.js";
+import { getLogState } from "../core/logStore.js";
 
 export function initGrid() {
   const root = $("#grid-root");
 
   const render = () => {
-    const { cols, rows, cells, showIndex } = store.getState();
+    const { cols, rows, cells } = store.getState();
     root.innerHTML = "";
 
     const wrapper = createElement("div", "grid-wrapper");
@@ -32,18 +33,17 @@ export function initGrid() {
         const cell = cells[index];
 
         const cellEl = createElement("div", "grid-cell");
-        if (cell && cell.revealed) {
+        if (cell.revealed) {
           cellEl.classList.add("grid-cell--revealed");
           cellEl.textContent = cell.value;
         }
 
-        if (showIndex) {
-          const idxEl = createElement("div", "grid-cell-index");
-          idxEl.textContent = index + 1; // 1-based
-          cellEl.appendChild(idxEl);
-        }
-
         cellEl.onclick = () => {
+          const { activeLogId } = getLogState();
+          if (!activeLogId) {
+            window.alert("請先選擇或建立 Log 再輸入格子。");
+            return;
+          }
           openNumberPadForCell(index);
         };
 

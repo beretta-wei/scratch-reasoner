@@ -1,7 +1,7 @@
 import { GRID_PRESETS, DEFAULT_PRESET_ID } from "../config/gridPresets.js";
 
 function createInitialState() {
-  const preset = GRID_PRESETS.find(p => p.id === DEFAULT_PRESET_ID) || GRID_PRESETS[0];
+  const preset = GRID_PRESETS.find((p) => p.id === DEFAULT_PRESET_ID) || GRID_PRESETS[0];
   const total = preset.cols * preset.rows;
 
   return {
@@ -11,9 +11,8 @@ function createInitialState() {
     cells: Array.from({ length: total }, (_, i) => ({
       index: i,
       value: null,
-      revealed: false
+      revealed: false,
     })),
-    showIndex: false
   };
 }
 
@@ -36,8 +35,8 @@ class Store {
     for (const fn of this.listeners) {
       try {
         fn();
-      } catch (e) {
-        console.error("store listener error", e);
+      } catch (err) {
+        console.error("store listener error:", err);
       }
     }
   }
@@ -48,45 +47,34 @@ class Store {
   }
 
   setGridPreset(presetId) {
-    const preset = GRID_PRESETS.find(p => p.id === presetId);
+    const preset = GRID_PRESETS.find((p) => p.id === presetId);
     if (!preset) return;
     const total = preset.cols * preset.rows;
     const cells = Array.from({ length: total }, (_, i) => ({
       index: i,
       value: null,
-      revealed: false
+      revealed: false,
     }));
     this.update({
       gridPresetId: preset.id,
       cols: preset.cols,
       rows: preset.rows,
-      cells
+      cells,
     });
   }
 
   setCellValue(index, value) {
-    const cells = this.state.cells.slice();
-    if (index < 0 || index >= cells.length) return;
+    const { cells } = this.state;
+    if (!Array.isArray(cells) || index < 0 || index >= cells.length) return;
 
-    let numeric = null;
-    if (value !== null && value !== undefined && value !== "") {
-      const num = Number(value);
-      if (!Number.isNaN(num)) {
-        numeric = num;
-      }
-    }
-
-    cells[index] = {
-      ...cells[index],
-      value: numeric,
-      revealed: numeric !== null
+    const updated = cells.slice();
+    updated[index] = {
+      ...updated[index],
+      value,
+      revealed: value !== null && value !== undefined,
     };
 
-    this.update({ cells });
-  }
-
-  setShowIndex(flag) {
-    this.update({ showIndex: !!flag });
+    this.update({ cells: updated });
   }
 
   reset() {

@@ -306,17 +306,22 @@ body {
 
 
 
-/* Grid cell index overlay (右上角淡色序號) */
-.grid-cell {
-  position: relative;
+/* Log controls layout */
+.control-row {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
-.grid-cell-index {
-  position: absolute;
-  top: 2px;
-  right: 4px;
-  font-size: 0.55rem;
+.control-label {
+  font-size: 0.8rem;
   color: var(--text-muted);
-  opacity: 0.8; /* 淡色，不搶視覺 */
-  pointer-events: none;
+}
+
+.control-active-log {
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
