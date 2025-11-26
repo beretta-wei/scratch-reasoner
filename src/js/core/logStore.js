@@ -1,10 +1,9 @@
 import { store } from "./state.js";
-import { GRID_PRESETS } from "../config/gridPresets.js";
 
-const STORAGE_LOGS_KEY = "scratchReasonerLogs";
-const STORAGE_LABELS_KEY = "scratchReasonerLogLabels";
+const LS_NAMES_KEY = "scratchReasoner.logNames";
+const LS_LOGS_KEY = "scratchReasoner.logs";
+const LS_ACTIVE_KEY = "scratchReasoner.activeLogId";
 
-// 預設名稱（由使用者提供）
 const DEFAULT_LABELS = [
   "阿傑",
   "老師",
@@ -14,175 +13,201 @@ const DEFAULT_LABELS = [
   "鐵馬",
   "鐵路222",
   "益民227",
-  "益民123",
+  "益民123"
 ];
 
-let logs = [];
-let labels = [...DEFAULT_LABELS];
-let activeLogId = null;
-const listeners = new Set();
+let logState = {
+  labelNames: [...DEFAULT_LABELS],
+  logs: [],
+  activeLogId: null,
+  currentLabelName: DEFAULT_LABELS[0] || ""
+};
 
-function emit() {
-  for (const fn of listeners) {
-    try {
-      fn();
-    } catch (err) {
-      console.error("logStore listener error:", err);
+function safeParse(json, fallback) {
+  if (!json) return fallback;
+  try {
+    const v = JSON.parse(json);
+    if (!Array.isArray(fallback) && typeof fallback === "object" && fallback !== null) {
+      return typeof v === "object" && v !== null ? v : fallback;
     }
+    return Array.isArray(fallback) ? (Array.isArray(v) ? v : fallback) : fallback;
+  } catch {
+    return fallback;
   }
 }
 
 function loadFromStorage() {
-  try {
-    const logsRaw = window.localStorage.getItem(STORAGE_LOGS_KEY);
-    const labelsRaw = window.localStorage.getItem(STORAGE_LABELS_KEY);
+  if (typeof localStorage === "undefined") return;
+  logState.labelNames = safeParse(localStorage.getItem(LS_NAMES_KEY), logState.labelNames);
+  logState.logs = safeParse(localStorage.getItem(LS_LOGS_KEY), []);
+  const active = localStorage.getItem(LS_ACTIVE_KEY);
+  logState.activeLogId = active || null;
+}
 
-    if (logsRaw) {
-      const parsed = JSON.parse(logsRaw);
-      if (Array.isArray(parsed)) {
-        logs = parsed;
-      }
-    }
+function saveNames() {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(LS_NAMES_KEY, JSON.stringify(logState.labelNames));
+}
 
-    if (labelsRaw) {
-      const parsedLabels = JSON.parse(labelsRaw);
-      if (Array.isArray(parsedLabels)) {
-        // 合併預設與使用者已儲存名稱
-        const set = new Set(DEFAULT_LABELS);
-        parsedLabels.forEach((name) => {
-          if (typeof name === "string" && name.trim()) {
-            set.add(name.trim());
-          }
-        });
-        labels = Array.from(set);
-      }
-    }
-  } catch (err) {
-    console.error("loadFromStorage error:", err);
+function saveLogsAndActive() {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(LS_LOGS_KEY, JSON.stringify(logState.logs));
+  if (logState.activeLogId) {
+    localStorage.setItem(LS_ACTIVE_KEY, logState.activeLogId);
+  } else {
+    localStorage.removeItem(LS_ACTIVE_KEY);
   }
 }
 
-function saveToStorage() {
-  try {
-    window.localStorage.setItem(STORAGE_LOGS_KEY, JSON.stringify(logs));
-    window.localStorage.setItem(STORAGE_LABELS_KEY, JSON.stringify(labels));
-  } catch (err) {
-    console.error("saveToStorage error:", err);
-  }
-}
+function snapshotStateToActiveLog() {
+  if (!logState.activeLogId) return;
+  const idx = logState.logs.findIndex(l => l.id === logState.activeLogId);
+  if (idx === -1) return;
 
-function formatTimestamp(date) {
-  const pad = (n) => String(n).padStart(2, "0");
-  const y = date.getFullYear();
-  const m = pad(date.getMonth() + 1);
-  const d = pad(date.getDate());
-  const hh = pad(date.getHours());
-  const mm = pad(date.getMinutes());
-  const ss = pad(date.getSeconds());
-  return `${y}${m}${d}-${hh}${mm}${ss}`;
+  const s = store.getState();
+  const log = logState.logs[idx];
+
+  if (log.cols !== s.cols || log.rows !== s.rows) {
+    return;
+  }
+
+  log.gridPresetId = s.gridPresetId;
+  log.cells = s.cells.map(c => ({
+    index: c.index,
+    value: c.value,
+    revealed: c.revealed
+  }));
+
+  saveLogsAndActive();
 }
 
 export function initLogStore() {
-  if (typeof window === "undefined") return;
-
   loadFromStorage();
 
-  // 監聽 grid 狀態變化，若有作用中的 log，則一併更新其 cells
+  // 若 storage 中沒有有效名稱，至少要有預設一個
+  if (!logState.labelNames || logState.labelNames.length === 0) {
+    logState.labelNames = [...DEFAULT_LABELS];
+  }
+  if (!logState.currentLabelName && logState.labelNames.length > 0) {
+    logState.currentLabelName = logState.labelNames[0];
+  }
+
+  // 監聽 grid 狀態變化，自動同步到目前 Log
   store.subscribe(() => {
-    if (!activeLogId) return;
-    const state = store.getState();
-    const log = logs.find((l) => l.id === activeLogId);
-    if (!log) return;
-
-    log.gridPresetId = state.gridPresetId;
-    log.cols = state.cols;
-    log.rows = state.rows;
-    log.cells = state.cells.map((c) => ({
-      index: c.index,
-      value: c.value,
-    }));
-
-    saveToStorage();
-    emit();
+    snapshotStateToActiveLog();
   });
 }
 
-export function subscribeLog(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
+export function getLogState() {
+  const { labelNames, logs, activeLogId, currentLabelName } = logState;
+  return {
+    labelNames: [...labelNames],
+    logs: [...logs],
+    activeLogId,
+    currentLabelName
+  };
 }
 
-export function getLogState() {
-  return {
-    logs,
-    labels,
-    activeLogId,
-  };
+export function setCurrentLabelName(name) {
+  logState.currentLabelName = name;
 }
 
 export function addLabelName(name) {
   const trimmed = (name || "").trim();
   if (!trimmed) return;
-  if (!labels.includes(trimmed)) {
-    labels.push(trimmed);
-    saveToStorage();
-    emit();
+  if (!logState.labelNames.includes(trimmed)) {
+    logState.labelNames.push(trimmed);
+    saveNames();
   }
+  logState.currentLabelName = trimmed;
 }
 
-export function createLogForCurrentState(labelName) {
-  const trimmed = (labelName || "").trim();
-  if (!trimmed) return null;
+function formatTimestamp(d) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const MM = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  const ss = pad(d.getSeconds());
+  return `${yyyy}${MM}${dd}-${hh}${mm}${ss}`;
+}
 
-  const state = store.getState();
-  const total = state.cols * state.rows;
-  const id = `${trimmed}_${total}_${formatTimestamp(new Date())}`;
+export function createLogForCurrentState() {
+  const label = (logState.currentLabelName || "").trim();
+  if (!label) return null;
+
+  const s = store.getState();
+  const total = s.cols * s.rows;
+  const now = new Date();
+  const ts = formatTimestamp(now);
+  const id = `${label}_${total}_${ts}`;
 
   const log = {
     id,
-    labelName: trimmed,
-    gridPresetId: state.gridPresetId,
-    cols: state.cols,
-    rows: state.rows,
-    createdAt: Date.now(),
-    cells: state.cells.map((c) => ({
+    labelName: label,
+    gridPresetId: s.gridPresetId,
+    cols: s.cols,
+    rows: s.rows,
+    createdAt: now.toISOString(),
+    cells: s.cells.map(c => ({
       index: c.index,
       value: c.value,
-    })),
+      revealed: c.revealed
+    }))
   };
 
-  logs.push(log);
-  activeLogId = id;
-  saveToStorage();
-  emit();
-
+  logState.logs.push(log);
+  logState.activeLogId = id;
+  saveLogsAndActive();
   return log;
 }
 
-export function setActiveLog(id) {
-  const log = logs.find((l) => l.id === id);
-  if (!log) return;
-
-  activeLogId = id;
-
-  // 確保使用對應模板
-  const preset = GRID_PRESETS.find((p) => p.id === log.gridPresetId);
-  if (preset) {
-    store.setGridPreset(preset.id);
+export function setActiveLog(logId) {
+  logState.activeLogId = logId || null;
+  if (!logId) {
+    saveLogsAndActive();
+    return;
   }
 
-  // 套用格子內容
-  const totalCells = log.cols * log.rows;
-  for (let i = 0; i < totalCells; i++) {
-    const cellData = log.cells.find((c) => c.index === i);
-    const value = cellData ? cellData.value : null;
-    store.setCellValue(i, value);
+  const log = logState.logs.find(l => l.id === logId);
+  if (!log) {
+    saveLogsAndActive();
+    return;
   }
 
-  emit();
+  const cells = log.cells || [];
+  const total = log.cols * log.rows;
+  const normalizedCells = Array.from({ length: total }, (_, i) => {
+    const found = cells.find(c => c.index === i);
+    const val = found ? found.value : null;
+    return {
+      index: i,
+      value: val,
+      revealed: val !== null && val !== undefined && val !== ""
+    };
+  });
+
+  store.update({
+    gridPresetId: log.gridPresetId,
+    cols: log.cols,
+    rows: log.rows,
+    cells: normalizedCells
+  });
+
+  saveLogsAndActive();
 }
 
 export function clearActiveLog() {
-  activeLogId = null;
-  emit();
+  logState.activeLogId = null;
+  saveLogsAndActive();
+}
+
+export function getLogsForCurrentView() {
+  const s = store.getState();
+  const total = s.cols * s.rows;
+  const label = logState.currentLabelName;
+  return logState.logs
+    .filter(l => l.labelName === label && l.cols * l.rows === total)
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }

@@ -3,147 +3,175 @@ import { store } from "../core/state.js";
 import { $, createElement } from "../utils/dom.js";
 import {
   getLogState,
-  subscribeLog,
+  setCurrentLabelName,
   addLabelName,
   createLogForCurrentState,
   setActiveLog,
   clearActiveLog,
+  getLogsForCurrentView
 } from "../core/logStore.js";
 
 export function initControls() {
   const root = $("#controls-root");
   root.innerHTML = "";
 
-  // ===== 模板選擇 =====
+  const state = store.getState();
+  const logState = getLogState();
+
+  // === 上排：模板選擇 + 顯示格子序號 ===
+  const topRow = createElement("div", "control-row");
+
   const presetSelect = createElement("select", "select");
-  GRID_PRESETS.forEach((p) => {
+  GRID_PRESETS.forEach(p => {
     const o = createElement("option");
     o.value = p.id;
     o.textContent = p.label;
     presetSelect.appendChild(o);
   });
-  presetSelect.value = store.getState().gridPresetId;
+  presetSelect.value = state.gridPresetId;
   presetSelect.onchange = () => {
-    const newId = presetSelect.value;
-    store.setGridPreset(newId);
-    clearActiveLog(); // 切換模板後，需重新選擇或建立 Log
+    clearActiveLog();
+    store.setGridPreset(presetSelect.value);
   };
 
-  // ===== 名稱選擇 + 新增 =====
-  const nameWrapper = createElement("div", "control-row");
-  const nameLabel = createElement("span", "control-label", "名稱：");
-  const nameSelect = createElement("select", "select");
-  const nameAddBtn = createElement("button", "btn btn-ghost", "+ 名稱");
+  const indexToggleWrapper = createElement("label", "control-toggle");
+  const indexToggle = createElement("input");
+  indexToggle.type = "checkbox";
+  indexToggle.checked = state.showIndex;
+  indexToggle.onchange = () => {
+    store.setShowIndex(indexToggle.checked);
+  };
+  const indexLabel = createElement("span", "control-label");
+  indexLabel.textContent = "顯示格子序號";
 
-  const refreshNameOptions = () => {
-    const { labels } = getLogState();
-    nameSelect.innerHTML = "";
-    labels.forEach((name) => {
+  indexToggleWrapper.appendChild(indexToggle);
+  indexToggleWrapper.appendChild(indexLabel);
+
+  topRow.appendChild(presetSelect);
+  topRow.appendChild(indexToggleWrapper);
+
+  // === 中排：名稱選擇 + 新增 ===
+  const labelRow = createElement("div", "control-row");
+  const labelTitle = createElement("span", "control-label", "名稱：");
+
+  const labelSelect = createElement("select", "select");
+  logState.labelNames.forEach(name => {
+    const opt = createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    labelSelect.appendChild(opt);
+  });
+  if (logState.currentLabelName && logState.labelNames.includes(logState.currentLabelName)) {
+    labelSelect.value = logState.currentLabelName;
+  }
+
+  labelSelect.onchange = () => {
+    setCurrentLabelName(labelSelect.value);
+    renderLogsSelect();
+  };
+
+  const addLabelBtn = createElement("button", "btn", "+ 名稱");
+  addLabelBtn.onclick = () => {
+    const input = window.prompt("請輸入新的名稱：");
+    if (!input) return;
+    addLabelName(input);
+    const updated = getLogState();
+    labelSelect.innerHTML = "";
+    updated.labelNames.forEach(name => {
       const opt = createElement("option");
       opt.value = name;
       opt.textContent = name;
-      nameSelect.appendChild(opt);
+      labelSelect.appendChild(opt);
     });
+    labelSelect.value = updated.currentLabelName;
+    renderLogsSelect();
   };
 
-  nameAddBtn.onclick = () => {
-    const input = window.prompt("請輸入新名稱：");
-    if (!input) return;
-    addLabelName(input);
-    refreshNameOptions();
-    nameSelect.value = input.trim();
-  };
+  labelRow.appendChild(labelTitle);
+  labelRow.appendChild(labelSelect);
+  labelRow.appendChild(addLabelBtn);
 
-  refreshNameOptions();
-  nameWrapper.appendChild(nameLabel);
-  nameWrapper.appendChild(nameSelect);
-  nameWrapper.appendChild(nameAddBtn);
-
-  // ===== Log 選擇與建立 =====
-  const logWrapper = createElement("div", "control-row");
-  const logLabel = createElement("span", "control-label", "Log：");
+  // === 下排：Log 選擇 + 建立 ===
+  const logRow = createElement("div", "control-row");
+  const logTitle = createElement("span", "control-label", "Log：");
 
   const logSelect = createElement("select", "select");
-  const logCreateBtn = createElement("button", "btn", "建立 Log");
+  const createLogBtn = createElement("button", "btn", "建立 Log");
 
-  const activeInfo = createElement("div", "control-active-log");
-
-  const refreshLogOptions = () => {
-    const { logs } = getLogState();
-    const state = store.getState();
-    const total = state.cols * state.rows;
-    const currentName = nameSelect.value;
-
+  function renderLogsSelect() {
+    const logs = getLogsForCurrentView();
+    const { activeLogId } = getLogState();
     logSelect.innerHTML = "";
-
-    const filtered = logs
-      .filter((l) => l.labelName === currentName && l.cols * l.rows === total)
-      .sort((a, b) => b.createdAt - a.createdAt);
-
-    filtered.forEach((log) => {
+    if (logs.length === 0) {
       const opt = createElement("option");
-      opt.value = log.id;
-      opt.textContent = log.id;
+      opt.value = "";
+      opt.textContent = "（尚無 Log）";
       logSelect.appendChild(opt);
-    });
-  };
+      logSelect.disabled = true;
+    } else {
+      logSelect.disabled = false;
+      logs.forEach(log => {
+        const opt = createElement("option");
+        opt.value = log.id;
+        opt.textContent = log.id;
+        logSelect.appendChild(opt);
+      });
+      if (activeLogId && logs.some(l => l.id === activeLogId)) {
+        logSelect.value = activeLogId;
+      } else {
+        logSelect.selectedIndex = 0;
+      }
+    }
+    renderActiveLogLabel();
+  }
 
-  logCreateBtn.onclick = () => {
-    const name = nameSelect.value;
-    if (!name) {
-      window.alert("請先選擇或新增名稱，再建立 Log。");
+  createLogBtn.onclick = () => {
+    const log = createLogForCurrentState();
+    if (!log) {
+      window.alert("請先選擇名稱再建立 Log。");
       return;
     }
-    const log = createLogForCurrentState(name);
-    refreshLogOptions();
-    if (log) {
-      logSelect.value = log.id;
-      activeInfo.textContent = `目前編輯：${log.id}`;
-    }
+    renderLogsSelect();
   };
 
   logSelect.onchange = () => {
-    if (!logSelect.value) return;
-    setActiveLog(logSelect.value);
-    activeInfo.textContent = `目前編輯：${logSelect.value}`;
+    const id = logSelect.value;
+    if (!id) return;
+    setActiveLog(id);
+    renderActiveLogLabel();
   };
 
-  logWrapper.appendChild(logLabel);
-  logWrapper.appendChild(logSelect);
-  logWrapper.appendChild(logCreateBtn);
+  logRow.appendChild(logTitle);
+  logRow.appendChild(logSelect);
+  logRow.appendChild(createLogBtn);
 
-  // ===== 重置按鈕 =====
-  const reset = createElement("button", "btn", "重置全部");
-  reset.onclick = () => {
-    if (!window.confirm("確定清空目前格子？")) return;
+  // === 底部：目前作用中 Log + 儲存位置說明 + 重置 ===
+  const bottomRow = createElement("div", "control-row");
+  const activeLabel = createElement("div", "control-active-log");
+
+  function renderActiveLogLabel() {
+    const { activeLogId } = getLogState();
+    if (activeLogId) {
+      activeLabel.textContent = "目前編輯：" + activeLogId + "（儲存於本機瀏覽器 localStorage）";
+    } else {
+      activeLabel.textContent = "目前尚未選擇 Log（儲存位置：本機瀏覽器 localStorage）";
+    }
+  }
+
+  const resetBtn = createElement("button", "btn", "重置全部");
+  resetBtn.onclick = () => {
+    if (!window.confirm("確定清空目前格子內容？")) return;
     store.reset();
   };
 
-  // 監聽 log 狀態變化（例如由其他地方更新）
-  subscribeLog(() => {
-    // 名稱清單只有在新增名稱時才會變動，這裡只需要更新 Log 清單與目前狀態
-    refreshLogOptions();
-    const { activeLogId } = getLogState();
-    if (activeLogId) {
-      activeInfo.textContent = `目前編輯：${activeLogId}`;
-    } else {
-      activeInfo.textContent = "目前尚未選擇 Log";
-    }
-  });
+  bottomRow.appendChild(activeLabel);
+  bottomRow.appendChild(resetBtn);
 
-  // 初始化顯示
-  refreshLogOptions();
-  const { activeLogId } = getLogState();
-  if (activeLogId) {
-    activeInfo.textContent = `目前編輯：${activeLogId}`;
-  } else {
-    activeInfo.textContent = "目前尚未選擇 Log";
-  }
+  // === 渲染一開始的 Log 下拉與狀態 ===
+  renderLogsSelect();
 
-  // ===== 組裝到畫面 =====
-  root.appendChild(presetSelect);
-  root.appendChild(nameWrapper);
-  root.appendChild(logWrapper);
-  root.appendChild(activeInfo);
-  root.appendChild(reset);
+  root.appendChild(topRow);
+  root.appendChild(labelRow);
+  root.appendChild(logRow);
+  root.appendChild(bottomRow);
 }

@@ -306,7 +306,7 @@ body {
 
 
 
-/* Log controls layout */
+/* 控制列排版：多行排版用 */
 .control-row {
   margin-top: 4px;
   display: flex;
@@ -321,7 +321,22 @@ body {
 }
 
 .control-active-log {
-  margin-top: 4px;
   font-size: 0.75rem;
   color: var(--text-muted);
+  flex: 1;
+}
+
+/* Grid cell index overlay (右上角淡色序號) */
+.grid-cell {
+  position: relative;
+}
+
+.grid-cell-index {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.55rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+  pointer-events: none;
 }
