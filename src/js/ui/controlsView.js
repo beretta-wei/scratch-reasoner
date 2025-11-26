@@ -8,7 +8,6 @@ import {
   createLogForCurrentState,
   setActiveLog,
   clearActiveLog,
-  clearAllLogsFromStorage,
   getLogsForCurrentView
 } from "../core/logStore.js";
 
@@ -19,7 +18,69 @@ export function initControls() {
   const state = store.getState();
   const logState = getLogState();
 
-  // === 上排：模板選擇 + 顯示格子序號 ===
+  // === 建立 Tabs 結構 ===
+  const tabsHeader = createElement("div", "tabs-header");
+  const tabsContent = createElement("div", "tabs-content");
+
+  const tabConfigs = [
+    { id: "tab-settings", label: "盤面設定" },
+    { id: "tab-logs", label: "Log 管理" },
+    { id: "tab-heatmap", label: "Heatmap" },
+    { id: "tab-inference", label: "推理結果" }
+  ];
+
+  const panes = {};
+
+  tabConfigs.forEach((tab, index) => {
+    const btn = createElement("button", "tab-btn", tab.label);
+    btn.dataset.tab = tab.id;
+    if (index === 0) {
+      btn.classList.add("active");
+    }
+    tabsHeader.appendChild(btn);
+
+    const pane = createElement("div", "tab-pane");
+    pane.id = tab.id;
+    if (index === 0) {
+      pane.classList.add("active");
+    }
+    panes[tab.id] = pane;
+    tabsContent.appendChild(pane);
+  });
+
+  // 點擊切換 Tab
+  tabsHeader.addEventListener("click", (ev) => {
+    const btn = ev.target.closest(".tab-btn");
+    if (!btn) return;
+    const targetId = btn.dataset.tab;
+    if (!targetId) return;
+
+    // 更新按鈕樣式
+    tabsHeader.querySelectorAll(".tab-btn").forEach(b => {
+      if (b === btn) {
+        b.classList.add("active");
+      } else {
+        b.classList.remove("active");
+      }
+    });
+
+    // 更新內容面板
+    Object.entries(panes).forEach(([id, pane]) => {
+      if (id === targetId) {
+        pane.classList.add("active");
+      } else {
+        pane.classList.remove("active");
+      }
+    });
+  });
+
+  root.appendChild(tabsHeader);
+  root.appendChild(tabsContent);
+
+  // ========== Tab 1：盤面設定 ==========
+  const settingsPane = panes["tab-settings"];
+
+  // 上排：模板選擇 + 顯示格子序號
   const topRow = createElement("div", "control-row");
 
   const presetSelect = createElement("select", "select");
@@ -51,7 +112,17 @@ export function initControls() {
   topRow.appendChild(presetSelect);
   topRow.appendChild(indexToggleWrapper);
 
-  // === 中排：名稱選擇 + 新增 ===
+  settingsPane.appendChild(topRow);
+
+  // 基本統計容器（提供給 statsView 使用）
+  const basicStatsContainer = createElement("div", "stats-basic-container");
+  basicStatsContainer.id = "tab-basic-stats";
+  settingsPane.appendChild(basicStatsContainer);
+
+  // ========== Tab 2：Log 管理 ==========
+  const logsPane = panes["tab-logs"];
+
+  // 名稱選擇 + 新增
   const labelRow = createElement("div", "control-row");
   const labelTitle = createElement("span", "control-label", "名稱：");
 
@@ -64,6 +135,35 @@ export function initControls() {
   });
   if (logState.currentLabelName && logState.labelNames.includes(logState.currentLabelName)) {
     labelSelect.value = logState.currentLabelName;
+  }
+
+  function renderLogsSelect() {
+    const logs = getLogsForCurrentView();
+    const { activeLogId } = getLogState();
+    logSelect.innerHTML = "";
+    if (logs.length === 0) {
+      const opt = createElement("option");
+      opt.value = "";
+      opt.textContent = "（尚無 Log）";
+      logSelect.appendChild(opt);
+      logSelect.disabled = true;
+    } else {
+      logSelect.disabled = false;
+      logs.forEach(log => {
+        const opt = createElement("option");
+        opt.value = log.id;
+        opt.textContent = log.id;
+        logSelect.appendChild(opt);
+      });
+      if (activeLogId && logs.some(l => l.id === activeLogId)) {
+        logSelect.value = activeLogId;
+      } else {
+        const first = logs[0];
+        logSelect.value = first.id;
+        setActiveLog(first.id);
+      }
+    }
+    renderActiveLogLabel();
   }
 
   labelSelect.onchange = () => {
@@ -92,61 +192,22 @@ export function initControls() {
   labelRow.appendChild(labelSelect);
   labelRow.appendChild(addLabelBtn);
 
-  // === 下排：Log 選擇 + 建立 ===
+  logsPane.appendChild(labelRow);
+
+  // Log 選擇 + 建立
   const logRow = createElement("div", "control-row");
   const logTitle = createElement("span", "control-label", "Log：");
 
   const logSelect = createElement("select", "select");
   const createLogBtn = createElement("button", "btn", "建立 Log");
 
-  function renderLogsSelect() {
-    const logs = getLogsForCurrentView();
-    const { activeLogId } = getLogState();
-    logSelect.innerHTML = "";
-    if (logs.length === 0) {
-      const opt = createElement("option");
-      opt.value = "";
-      opt.textContent = "（尚無 Log）";
-      logSelect.appendChild(opt);
-      logSelect.disabled = true;
-    } else {
-      logSelect.disabled = false;
-      logs.forEach(log => {
-        const opt = createElement("option");
-        opt.value = log.id;
-        opt.textContent = log.id;
-        logSelect.appendChild(opt);
-      });
-      if (activeLogId && logs.some(l => l.id === activeLogId)) {
-        logSelect.value = activeLogId;
-      } else {
-        logSelect.selectedIndex = 0;
-      }
-    }
-    renderActiveLogLabel();
-  }
-
-  createLogBtn.onclick = () => {
-    const log = createLogForCurrentState();
-    if (!log) {
-      window.alert("請先選擇名稱再建立 Log。");
-      return;
-    }
-    renderLogsSelect();
-  };
-
-  logSelect.onchange = () => {
-    const id = logSelect.value;
-    if (!id) return;
-    setActiveLog(id);
-    renderActiveLogLabel();
-  };
-
   logRow.appendChild(logTitle);
   logRow.appendChild(logSelect);
   logRow.appendChild(createLogBtn);
 
-  // === 底部：目前作用中 Log + 儲存位置說明 + 重置 ===
+  logsPane.appendChild(logRow);
+
+  // 底部：目前作用中 Log + 儲存位置說明 + 重置
   const bottomRow = createElement("div", "control-row");
   const activeLabel = createElement("div", "control-active-log");
 
@@ -166,22 +227,29 @@ export function initControls() {
   };
 
   bottomRow.appendChild(activeLabel);
-  
-const clearStorageBtn = createElement("button", "btn", "清除本機資料");
-clearStorageBtn.onclick = () => {
-  if (!window.confirm("確定要清除所有 Log 與本機資料？此操作無法復原。")) return;
-  clearAllLogsFromStorage();
-  store.reset();
-  renderLogsSelect();
-};
-bottomRow.appendChild(clearStorageBtn);
-bottomRow.appendChild(resetBtn);
+  bottomRow.appendChild(resetBtn);
 
-  // === 渲染一開始的 Log 下拉與狀態 ===
+  logsPane.appendChild(bottomRow);
+
+  // 建立 Log 的 click handler
+  createLogBtn.onclick = () => {
+    const log = createLogForCurrentState();
+    if (!log) {
+      window.alert("請先選擇名稱再建立 Log。");
+      return;
+    }
+    renderLogsSelect();
+  };
+
+  logSelect.onchange = () => {
+    const id = logSelect.value;
+    if (!id) return;
+    setActiveLog(id);
+    renderActiveLogLabel();
+  };
+
+  // 初始化 Log 下拉與狀態
   renderLogsSelect();
 
-  root.appendChild(topRow);
-  root.appendChild(labelRow);
-  root.appendChild(logRow);
-  root.appendChild(bottomRow);
+  // ========== Tab 3 & 4：由 statsView.js 負責填入內容 ==========
 }

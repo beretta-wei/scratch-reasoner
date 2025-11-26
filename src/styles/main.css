@@ -340,3 +340,53 @@ body {
   opacity: 0.8;
   pointer-events: none;
 }
+
+
+/* ========== Tabs for controls ========== */
+.tabs-header {
+  display: flex;
+  gap: var(--gap-sm);
+  margin-bottom: var(--gap-sm);
+  border-bottom: 1px solid var(--border-subtle);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  flex: 0 0 auto;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  padding: 6px 10px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  cursor: pointer;
+}
+
+.tab-btn.active {
+  background: var(--bg-elevated);
+  color: var(--text);
+  border-bottom: 2px solid var(--accent);
+}
+
+.tabs-content {
+  margin-top: var(--gap-sm);
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+.stats-basic-container {
+  margin-top: var(--gap-md);
+  padding-top: var(--gap-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* 隱藏舊版 stats 面板，統一由 Tabs 顯示 */
+.stats-panel {
+  display: none;
+}
