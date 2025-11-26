@@ -154,7 +154,11 @@ export function createLogForCurrentState() {
       index: c.index,
       value: c.value,
       revealed: c.revealed
-    }))
+    })),
+    luckyNumbers: {
+      major: [],
+      minor: []
+    }
   };
 
   logState.logs.push(log);
@@ -214,6 +218,72 @@ export function getLogsForCurrentView() {
 
 
 
+
+
+export function getLuckyNumbersForActiveLog() {
+  if (!logState.activeLogId) {
+    return { major: [], minor: [] };
+  }
+  const idx = logState.logs.findIndex(l => l.id === logState.activeLogId);
+  if (idx === -1) {
+    return { major: [], minor: [] };
+  }
+  const log = logState.logs[idx];
+  const s = store.getState();
+  const total = s.cols * s.rows;
+
+  if (!log.luckyNumbers) {
+    log.luckyNumbers = { major: [], minor: [] };
+  }
+
+  // 過濾掉超出目前盤面格數的數字
+  const major = Array.isArray(log.luckyNumbers.major)
+    ? log.luckyNumbers.major.filter(n => Number.isInteger(n) && n >= 1 && n <= total)
+    : [];
+  const minor = Array.isArray(log.luckyNumbers.minor)
+    ? log.luckyNumbers.minor.filter(n => Number.isInteger(n) && n >= 1 && n <= total)
+    : [];
+
+  // 若有變化，順便回寫
+  log.luckyNumbers.major = [...new Set(major)].sort((a, b) => a - b);
+  log.luckyNumbers.minor = [...new Set(minor)].sort((a, b) => a - b);
+  saveLogsAndActive();
+
+  return {
+    major: [...log.luckyNumbers.major],
+    minor: [...log.luckyNumbers.minor]
+  };
+}
+
+export function setLuckyNumbersForActiveLog(type, numbers) {
+  if (!logState.activeLogId) return;
+  const idx = logState.logs.findIndex(l => l.id === logState.activeLogId);
+  if (idx === -1) return;
+
+  const log = logState.logs[idx];
+  if (!log.luckyNumbers) {
+    log.luckyNumbers = { major: [], minor: [] };
+  }
+
+  const s = store.getState();
+  const total = s.cols * s.rows;
+
+  const normalized = Array.from(
+    new Set(
+      (numbers || [])
+        .map(n => Number(n))
+        .filter(n => Number.isInteger(n) && n >= 1 && n <= total)
+    )
+  ).sort((a, b) => a - b);
+
+  if (type === "major") {
+    log.luckyNumbers.major = normalized;
+  } else if (type === "minor") {
+    log.luckyNumbers.minor = normalized;
+  }
+
+  saveLogsAndActive();
+}
 
 export function clearAllLogsFromStorage() {
   logState.labelNames = [];

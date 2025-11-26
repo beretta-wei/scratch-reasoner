@@ -7,6 +7,8 @@ import {
   addLabelName,
   createLogForCurrentState,
   clearAllLogsFromStorage,
+  getLuckyNumbersForActiveLog,
+  setLuckyNumbersForActiveLog,
   setActiveLog,
   clearActiveLog,
   getLogsForCurrentView
@@ -120,6 +122,149 @@ export function initControls() {
   basicStatsContainer.id = "tab-basic-stats";
   settingsPane.appendChild(basicStatsContainer);
 
+
+  // 大獎 / 小獎號碼設定區
+  const luckySection = createElement("div", "lucky-section");
+
+  const majorRow = createElement("div", "control-row");
+  const majorLabel = createElement("span", "control-label", "大獎號碼");
+  const majorDisplay = createElement("button", "btn lucky-display", "尚未選擇");
+  majorRow.appendChild(majorLabel);
+  majorRow.appendChild(majorDisplay);
+
+  const minorRow = createElement("div", "control-row");
+  const minorLabel = createElement("span", "control-label", "小獎號碼");
+  const minorDisplay = createElement("button", "btn lucky-display", "尚未選擇");
+  minorRow.appendChild(minorLabel);
+  minorRow.appendChild(minorDisplay);
+
+  luckySection.appendChild(majorRow);
+  luckySection.appendChild(minorRow);
+
+  settingsPane.appendChild(luckySection);
+
+  function refreshLuckyDisplays() {
+    const state = getLogState();
+    if (!state.activeLogId) {
+      majorDisplay.textContent = "需先選擇 Log";
+      minorDisplay.textContent = "需先選擇 Log";
+      return;
+    }
+    const ln = getLuckyNumbersForActiveLog();
+    majorDisplay.textContent =
+      ln.major && ln.major.length ? ln.major.join(", ") : "尚未選擇";
+    minorDisplay.textContent =
+      ln.minor && ln.minor.length ? ln.minor.join(", ") : "尚未選擇";
+  }
+
+  let luckyOverlay = null;
+  let luckySheet = null;
+  let luckyGrid = null;
+  let luckyConfirmBtn = null;
+  let luckyCancelBtn = null;
+  let currentLuckyType = null;
+  let currentLuckySelection = new Set();
+
+  function ensureLuckyOverlay() {
+    if (luckyOverlay) return;
+
+    luckyOverlay = createElement("div", "lucky-overlay");
+    luckySheet = createElement("div", "lucky-sheet");
+    const titleEl = createElement("div", "lucky-title");
+
+    luckyGrid = createElement("div", "lucky-grid");
+
+    const actions = createElement("div", "lucky-actions");
+    luckyConfirmBtn = createElement("button", "btn", "確定");
+    luckyCancelBtn = createElement("button", "btn btn-secondary", "取消");
+
+    actions.appendChild(luckyConfirmBtn);
+    actions.appendChild(luckyCancelBtn);
+
+    luckySheet.appendChild(titleEl);
+    luckySheet.appendChild(luckyGrid);
+    luckySheet.appendChild(actions);
+
+    luckyOverlay.appendChild(luckySheet);
+    document.body.appendChild(luckyOverlay);
+
+    luckyOverlay.addEventListener("click", (e) => {
+      if (e.target === luckyOverlay) {
+        closeLuckyOverlay();
+      }
+    });
+
+    luckyCancelBtn.onclick = () => {
+      closeLuckyOverlay();
+    };
+
+    luckyConfirmBtn.onclick = () => {
+      const numbers = Array.from(currentLuckySelection);
+      setLuckyNumbersForActiveLog(currentLuckyType, numbers);
+      closeLuckyOverlay();
+      refreshLuckyDisplays();
+    };
+
+    function closeLuckyOverlay() {
+      if (!luckyOverlay) return;
+      luckyOverlay.classList.remove("lucky-overlay--open");
+      currentLuckyType = null;
+      currentLuckySelection = new Set();
+    }
+  }
+
+  function openLuckyPicker(type) {
+    const state = getLogState();
+    if (!state.activeLogId) {
+      window.alert("請先在 Log 管理中選擇或建立一個 Log。");
+      return;
+    }
+
+    ensureLuckyOverlay();
+
+    currentLuckyType = type;
+    currentLuckySelection = new Set();
+    const ln = getLuckyNumbersForActiveLog();
+    const seed = type === "major" ? ln.major : ln.minor;
+
+    seed.forEach((n) => currentLuckySelection.add(n));
+
+    const s = store.getState();
+    const total = s.cols * s.rows;
+
+    const titleText = type === "major" ? "選擇大獎號碼" : "選擇小獎號碼";
+    const titleEl = luckySheet.querySelector(".lucky-title");
+    titleEl.textContent = `${titleText}（1 ~ ${total}）`;
+
+    luckyGrid.innerHTML = "";
+    for (let n = 1; n <= total; n++) {
+      const btn = createElement("button", "lucky-num-btn", String(n));
+      btn.dataset.num = String(n);
+      if (currentLuckySelection.has(n)) {
+        btn.classList.add("is-selected");
+      }
+      btn.onclick = () => {
+        const num = Number(btn.dataset.num);
+        if (currentLuckySelection.has(num)) {
+          currentLuckySelection.delete(num);
+          btn.classList.remove("is-selected");
+        } else {
+          currentLuckySelection.add(num);
+          btn.classList.add("is-selected");
+        }
+      };
+      luckyGrid.appendChild(btn);
+    }
+
+    luckyOverlay.classList.add("lucky-overlay--open");
+  }
+
+  majorDisplay.onclick = () => openLuckyPicker("major");
+  minorDisplay.onclick = () => openLuckyPicker("minor");
+
+  // 初始顯示
+  refreshLuckyDisplays();
+
   // ========== Tab 2：Log 管理 ==========
   const logsPane = panes["tab-logs"];
 
@@ -165,6 +310,7 @@ export function initControls() {
       }
     }
     renderActiveLogLabel();
+    refreshLuckyDisplays();
   }
 
   labelSelect.onchange = () => {
@@ -236,6 +382,7 @@ export function initControls() {
     store.reset();
     renderLogsSelect();
     renderActiveLogLabel();
+    refreshLuckyDisplays();
   };
   bottomRow.appendChild(clearStorageBtn);
 
@@ -257,6 +404,7 @@ export function initControls() {
     if (!id) return;
     setActiveLog(id);
     renderActiveLogLabel();
+    refreshLuckyDisplays();
   };
 
   // 初始化 Log 下拉與狀態
