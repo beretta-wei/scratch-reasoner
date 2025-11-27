@@ -9,6 +9,8 @@ import {
   clearAllLogsFromStorage,
   getLuckyNumbersForActiveLog,
   setLuckyNumbersForActiveLog,
+  buildExportPayloadForActiveLog,
+  buildExportPayloadForAllLogs,
   setActiveLog,
   clearActiveLog,
   getLogsForCurrentView
@@ -414,3 +416,17 @@ export function initControls() {
 
   // ========== Tab 3 & 4：由 statsView.js 負責填入內容 ==========
 }
+function downloadJsonFile(filename, dataObj) {
+  if (!dataObj) return;
+  const json = JSON.stringify(dataObj, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+

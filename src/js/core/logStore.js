@@ -280,6 +280,57 @@ export function setLuckyNumbersForActiveLog(type, numbers) {
   saveLogsAndActive();
 }
 
+
+export function buildExportPayloadForActiveLog() {
+  if (!logState.activeLogId) return null;
+  const idx = logState.logs.findIndex(l => l.id === logState.activeLogId);
+  if (idx === -1) return null;
+  const log = logState.logs[idx];
+
+  return {
+    version: "1.0",
+    id: log.id,
+    labelName: log.labelName,
+    createdAt: log.createdAt,
+    cols: log.cols,
+    rows: log.rows,
+    cells: (log.cells || []).map(c => ({
+      index: c.index,
+      value: c.value,
+      revealed: c.revealed
+    })),
+    luckyNumbers: {
+      major: (log.luckyNumbers && Array.isArray(log.luckyNumbers.major)) ? [...log.luckyNumbers.major] : [],
+      minor: (log.luckyNumbers && Array.isArray(log.luckyNumbers.minor)) ? [...log.luckyNumbers.minor] : []
+    }
+  };
+}
+
+export function buildExportPayloadForAllLogs() {
+  const logs = (logState.logs || []).map(log => ({
+    id: log.id,
+    labelName: log.labelName,
+    createdAt: log.createdAt,
+    cols: log.cols,
+    rows: log.rows,
+    cells: (log.cells || []).map(c => ({
+      index: c.index,
+      value: c.value,
+      revealed: c.revealed
+    })),
+    luckyNumbers: {
+      major: (log.luckyNumbers && Array.isArray(log.luckyNumbers.major)) ? [...log.luckyNumbers.major] : [],
+      minor: (log.luckyNumbers && Array.isArray(log.luckyNumbers.minor)) ? [...log.luckyNumbers.minor] : []
+    }
+  }));
+
+  return {
+    version: "1.0",
+    exportedAt: new Date().toISOString(),
+    logs
+  };
+}
+
 export function clearAllLogsFromStorage() {
   logState.labelNames = [];
   logState.logs = [];
