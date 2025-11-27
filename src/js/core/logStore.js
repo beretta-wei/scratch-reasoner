@@ -217,9 +217,6 @@ export function getLogsForCurrentView() {
 }
 
 
-
-
-
 export function getLuckyNumbersForActiveLog() {
   if (!logState.activeLogId) {
     return { major: [], minor: [] };
@@ -236,7 +233,6 @@ export function getLuckyNumbersForActiveLog() {
     log.luckyNumbers = { major: [], minor: [] };
   }
 
-  // 過濾掉超出目前盤面格數的數字
   const major = Array.isArray(log.luckyNumbers.major)
     ? log.luckyNumbers.major.filter(n => Number.isInteger(n) && n >= 1 && n <= total)
     : [];
@@ -244,7 +240,6 @@ export function getLuckyNumbersForActiveLog() {
     ? log.luckyNumbers.minor.filter(n => Number.isInteger(n) && n >= 1 && n <= total)
     : [];
 
-  // 若有變化，順便回寫
   log.luckyNumbers.major = [...new Set(major)].sort((a, b) => a - b);
   log.luckyNumbers.minor = [...new Set(minor)].sort((a, b) => a - b);
   saveLogsAndActive();
@@ -293,4 +288,3 @@ export function clearAllLogsFromStorage() {
   localStorage.removeItem(LS_LOGS_KEY);
   localStorage.removeItem(LS_ACTIVE_KEY);
 }
-

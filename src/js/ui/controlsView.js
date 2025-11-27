@@ -168,13 +168,13 @@ export function initControls() {
   function ensureLuckyOverlay() {
     if (luckyOverlay) return;
 
-    luckyOverlay = createElement("div", "lucky-overlay");
-    luckySheet = createElement("div", "lucky-sheet");
-    const titleEl = createElement("div", "lucky-title");
+    luckyOverlay = createElement("div", "number-pad-overlay");
+    luckySheet = createElement("div", "number-pad-sheet");
+    const titleEl = createElement("div", "number-pad-header");
 
-    luckyGrid = createElement("div", "lucky-grid");
+    luckyGrid = createElement("div", "number-pad-grid");
 
-    const actions = createElement("div", "lucky-actions");
+    const actions = createElement("div", "number-pad-actions");
     luckyConfirmBtn = createElement("button", "btn", "確定");
     luckyCancelBtn = createElement("button", "btn btn-secondary", "取消");
 
@@ -207,9 +207,10 @@ export function initControls() {
 
     function closeLuckyOverlay() {
       if (!luckyOverlay) return;
-      luckyOverlay.classList.remove("lucky-overlay--open");
+      luckyOverlay.classList.remove("number-pad-overlay--open");
       currentLuckyType = null;
       currentLuckySelection = new Set();
+      document.body.style.overflow = "";
     }
   }
 
@@ -233,30 +234,31 @@ export function initControls() {
     const total = s.cols * s.rows;
 
     const titleText = type === "major" ? "選擇大獎號碼" : "選擇小獎號碼";
-    const titleEl = luckySheet.querySelector(".lucky-title");
+    const titleEl = luckySheet.querySelector(".number-pad-header");
     titleEl.textContent = `${titleText}（1 ~ ${total}）`;
 
     luckyGrid.innerHTML = "";
     for (let n = 1; n <= total; n++) {
-      const btn = createElement("button", "lucky-num-btn", String(n));
+      const btn = createElement("button", "number-pad-number-btn", String(n));
       btn.dataset.num = String(n);
       if (currentLuckySelection.has(n)) {
-        btn.classList.add("is-selected");
+        btn.classList.add("number-pad-number-btn--selected");
       }
       btn.onclick = () => {
         const num = Number(btn.dataset.num);
         if (currentLuckySelection.has(num)) {
           currentLuckySelection.delete(num);
-          btn.classList.remove("is-selected");
+          btn.classList.remove("number-pad-number-btn--selected");
         } else {
           currentLuckySelection.add(num);
-          btn.classList.add("is-selected");
+          btn.classList.add("number-pad-number-btn--selected");
         }
       };
       luckyGrid.appendChild(btn);
     }
 
-    luckyOverlay.classList.add("lucky-overlay--open");
+    document.body.style.overflow = "hidden";
+    luckyOverlay.classList.add("number-pad-overlay--open");
   }
 
   majorDisplay.onclick = () => openLuckyPicker("major");
