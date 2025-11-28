@@ -31,6 +31,9 @@ function downloadJsonFile(filename, dataObj) {
   URL.revokeObjectURL(url);
 }
 
+
+function renderCloudLogsPane(){const p=document.createElement("div");p.innerHTML="雲端Log分析（功能實作中）";return p;}
+
 export function initControls() {
   const root = $("#controls-root");
   root.innerHTML = "";

@@ -149,7 +149,6 @@ export function createLogForCurrentState() {
     gridPresetId: s.gridPresetId,
     cols: s.cols,
     rows: s.rows,
-    gridSize: { cols: s.cols, rows: s.rows, total: s.cols * s.rows },
     createdAt: now.toISOString(),
     cells: s.cells.map(c => ({
       index: c.index,
@@ -295,7 +294,6 @@ export function buildExportPayloadForActiveLog() {
     createdAt: log.createdAt,
     cols: log.cols,
     rows: log.rows,
-    gridSize: log.gridSize,
     cells: (log.cells || []).map(c => ({
       index: c.index,
       value: c.value,
@@ -315,7 +313,6 @@ export function buildExportPayloadForAllLogs() {
     createdAt: log.createdAt,
     cols: log.cols,
     rows: log.rows,
-    gridSize: log.gridSize,
     cells: (log.cells || []).map(c => ({
       index: c.index,
       value: c.value,
