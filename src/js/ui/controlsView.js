@@ -31,9 +31,6 @@ function downloadJsonFile(filename, dataObj) {
   URL.revokeObjectURL(url);
 }
 
-
-function renderCloudLogsPane(){const p=document.createElement("div");p.innerHTML="雲端Log分析（功能實作中）";return p;}
-
 export function initControls() {
   const root = $("#controls-root");
   root.innerHTML = "";
@@ -48,6 +45,7 @@ export function initControls() {
   const tabConfigs = [
     { id: "tab-settings", label: "盤面設定" },
     { id: "tab-logs", label: "Log 管理" },
+    { id: "tab-cloud", label: "雲端Log分析" },
     { id: "tab-heatmap", label: "Heatmap" },
     { id: "tab-inference", label: "推理結果" }
   ];
@@ -487,6 +485,220 @@ export function initControls() {
 
   // 初始化 Log 下拉與狀態
   renderLogsSelect();
+
+  // ========== Tab 雲端Log分析 ==========
+  const cloudPane = panes["tab-cloud"];
+
+  const cloudHeader = createElement("div", "section-title", "雲端 Log 分析");
+  cloudPane.appendChild(cloudHeader);
+
+  const cloudDesc = createElement("p", "cloud-desc");
+  cloudDesc.textContent = "根據目前盤面與選擇的名稱，從雲端 logs.json 中篩選出符合條件的 Log，並列出歷史大獎 / 小獎位置。";
+  cloudPane.appendChild(cloudDesc);
+
+  const cloudSummaryRow = createElement("div", "control-row");
+  const ownerLabel = createElement("span", "control-label");
+  const stateForCloud = store.getState();
+  const currentTotalCells = stateForCloud.cols * stateForCloud.rows;
+  const logStateForCloud = getLogState();
+  const currentOwner = (logStateForCloud.currentLabelName || "").trim();
+
+  if (!currentOwner) {
+    ownerLabel.textContent = "請先在「Log 管理」中選擇名稱，才能進行雲端分析。";
+    cloudSummaryRow.appendChild(ownerLabel);
+    cloudPane.appendChild(cloudSummaryRow);
+  } else {
+    ownerLabel.textContent = "目前名稱：" + currentOwner + "，盤面格數：" + currentTotalCells + " 格";
+    cloudSummaryRow.appendChild(ownerLabel);
+
+    const cloudCountSpan = createElement("span", "cloud-count");
+    cloudCountSpan.style.marginLeft = "0.5rem";
+    cloudSummaryRow.appendChild(cloudCountSpan);
+
+    cloudPane.appendChild(cloudSummaryRow);
+
+    const cloudSelectRow = createElement("div", "control-row");
+    const cloudSelectLabel = createElement("span", "control-label", "雲端 Log 清單：");
+    const cloudSelect = createElement("select", "select");
+    cloudSelect.disabled = true; // 僅顯示用
+    cloudSelectRow.appendChild(cloudSelectLabel);
+    cloudSelectRow.appendChild(cloudSelect);
+    cloudPane.appendChild(cloudSelectRow);
+
+    const cloudResults = createElement("div", "cloud-results");
+    cloudPane.appendChild(cloudResults);
+
+    fetch("src/logs/logs.json")
+      .then((res) => res.json())
+      .then((data) => {
+        const files = Array.isArray(data.files) ? data.files : [];
+        cloudCountSpan.textContent = "（雲端共 " + files.length + " 筆）";
+
+        cloudSelect.innerHTML = "";
+        files.forEach((f) => {
+          const opt = document.createElement("option");
+          opt.value = f.path;
+          opt.textContent = f.label || f.path;
+          cloudSelect.appendChild(opt);
+        });
+
+        if (files.length === 0) {
+          cloudResults.textContent = "目前 logs.json 中沒有任何雲端 Log。";
+          return;
+        }
+
+        // 篩選：同一個人名 + 同一格數
+        const targetOwner = currentOwner;
+        const targetTotal = currentTotalCells;
+
+        const filteredMeta = files.filter((f) => {
+          const label = f.label || "";
+          const parts = label.split("｜");
+          if (parts.length < 2) return false;
+          const owner = parts[0].trim();
+          const gridPart = parts[1] || "";
+          const numMatch = gridPart.replace(/[^0-9]/g, "");
+          const gridNum = numMatch ? parseInt(numMatch, 10) : NaN;
+          if (!gridNum || Number.isNaN(gridNum)) return false;
+          return owner === targetOwner && gridNum === targetTotal;
+        });
+
+        if (filteredMeta.length === 0) {
+          cloudResults.textContent = "沒有符合目前名稱與盤面格數的雲端 Log。";
+          return;
+        }
+
+        // 讀取所有符合的檔案
+        const loadPromises = filteredMeta.map((meta) => {
+          const url = "src/logs/" + meta.path;
+          return fetch(url)
+            .then((res) => res.json())
+            .then((json) => ({ meta, json }))
+            .catch(() => null);
+        });
+
+        Promise.all(loadPromises).then((items) => {
+          const valid = items.filter((it) => it && it.json);
+
+          if (valid.length === 0) {
+            cloudResults.textContent = "雲端 Log 讀取失敗，請確認檔案格式。";
+            return;
+          }
+
+          const processed = [];
+
+          valid.forEach((item) => {
+            const meta = item.meta;
+            const data = item.json || {};
+            let log = data;
+
+            if (Array.isArray(data.logs) && data.logs.length > 0) {
+              log = data.logs[0];
+            }
+
+            const cols = log.cols || stateForCloud.cols || 1;
+            const rows = log.rows || stateForCloud.rows || 1;
+            const total = cols * rows;
+
+            const lucky = log.luckyNumbers || {};
+            const majors = Array.isArray(lucky.major) ? [...lucky.major] : [];
+            const minors = Array.isArray(lucky.minor) ? [...lucky.minor] : [];
+
+            const createdAt = log.createdAt || meta.path || "";
+
+            processed.push({
+              meta,
+              cols,
+              rows,
+              total,
+              majors,
+              minors,
+              createdAt
+            });
+          });
+
+          // 依時間排序（舊 -> 新）
+          processed.sort((a, b) => {
+            const va = String(a.createdAt);
+            const vb = String(b.createdAt);
+            return va.localeCompare(vb);
+          });
+
+          cloudResults.innerHTML = "";
+
+          processed.forEach((item) => {
+            const wrap = createElement("div", "cloud-item");
+
+            const title = createElement("div", "cloud-title");
+            title.textContent = item.meta.label || item.meta.path;
+            wrap.appendChild(title);
+
+            const info = createElement("div", "cloud-info");
+            info.textContent =
+              "盤面：" +
+              item.rows +
+              " x " +
+              item.cols +
+              "（" +
+              item.total +
+              "格）";
+            wrap.appendChild(info);
+
+            const majorsBlock = createElement("div", "cloud-section");
+            const majorsHeader = createElement(
+              "div",
+              "cloud-subtitle",
+              "大獎（" + item.majors.length + " 個）"
+            );
+            majorsBlock.appendChild(majorsHeader);
+
+            const majorsBody = createElement("div", "cloud-body");
+            const sortedMajors = item.majors.slice().sort((a, b) => a - b);
+            sortedMajors.forEach((idx) => {
+              const c = (idx % item.cols) + 1;
+              const r = Math.floor(idx / item.cols) + 1;
+              const line = createElement(
+                "div",
+                "cloud-line",
+                c + " * " + r
+              );
+              majorsBody.appendChild(line);
+            });
+            majorsBlock.appendChild(majorsBody);
+            wrap.appendChild(majorsBlock);
+
+            const minorsBlock = createElement("div", "cloud-section");
+            const minorsHeader = createElement(
+              "div",
+              "cloud-subtitle",
+              "小獎（" + item.minors.length + " 個）"
+            );
+            minorsBlock.appendChild(minorsHeader);
+
+            const minorsBody = createElement("div", "cloud-body");
+            const sortedMinors = item.minors.slice().sort((a, b) => a - b);
+            sortedMinors.forEach((idx) => {
+              const c = (idx % item.cols) + 1;
+              const r = Math.floor(idx / item.cols) + 1;
+              const line = createElement(
+                "div",
+                "cloud-line",
+                c + " * " + r
+              );
+              minorsBody.appendChild(line);
+            });
+            minorsBlock.appendChild(minorsBody);
+            wrap.appendChild(minorsBlock);
+
+            cloudResults.appendChild(wrap);
+          });
+        });
+      })
+      .catch(() => {
+        cloudResults.textContent = "無法載入 logs.json，請確認路徑與檔案內容。";
+      });
+  }
+
 
   // ========== Tab 3 & 4：由 statsView.js 負責填入內容 ==========
 }
