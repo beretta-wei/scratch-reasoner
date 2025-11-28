@@ -3,6 +3,7 @@ import { store } from "./state.js";
 const LS_NAMES_KEY = "scratchReasoner.logNames";
 const LS_LOGS_KEY = "scratchReasoner.logs";
 const LS_ACTIVE_KEY = "scratchReasoner.activeLogId";
+const LS_CURRENT_LABEL_KEY = "scratchReasoner.currentLabelName";
 
 const DEFAULT_LABELS = [
   "阿傑",
@@ -42,6 +43,10 @@ function loadFromStorage() {
   logState.logs = safeParse(localStorage.getItem(LS_LOGS_KEY), []);
   const active = localStorage.getItem(LS_ACTIVE_KEY);
   logState.activeLogId = active || null;
+  const savedLabel = localStorage.getItem(LS_CURRENT_LABEL_KEY);
+  if (savedLabel) {
+    logState.currentLabelName = savedLabel;
+  }
 }
 
 function saveNames() {
@@ -110,6 +115,9 @@ export function getLogState() {
 
 export function setCurrentLabelName(name) {
   logState.currentLabelName = name;
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(LS_CURRENT_LABEL_KEY, name);
+  }
 }
 
 export function addLabelName(name) {
@@ -120,6 +128,9 @@ export function addLabelName(name) {
     saveNames();
   }
   logState.currentLabelName = trimmed;
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(LS_CURRENT_LABEL_KEY, trimmed);
+  }
 }
 
 function formatTimestamp(d) {
