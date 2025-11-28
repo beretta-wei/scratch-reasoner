@@ -486,7 +486,6 @@ export function initControls() {
   // 初始化 Log 下拉與狀態
   renderLogsSelect();
 
-
   // ========== Tab 雲端Log分析 ==========
   const cloudPane = panes["tab-cloud"];
 
@@ -498,46 +497,36 @@ export function initControls() {
   cloudPane.appendChild(cloudDesc);
 
   const cloudSummaryRow = createElement("div", "control-row");
-  const ownerLabel = createElement("span", "control-label", "請先在「Log 管理」中選擇名稱，並按下「重新分析」。");
-  cloudSummaryRow.appendChild(ownerLabel);
+  const ownerLabel = createElement("span", "control-label");
+  const stateForCloud = store.getState();
+  const currentTotalCells = stateForCloud.cols * stateForCloud.rows;
+  const logStateForCloud = getLogState();
+  const currentOwner = (logStateForCloud.currentLabelName || "").trim();
 
-  const cloudCountSpan = createElement("span", "cloud-count");
-  cloudCountSpan.style.marginLeft = "0.5rem";
-  cloudSummaryRow.appendChild(cloudCountSpan);
-
-  cloudPane.appendChild(cloudSummaryRow);
-
-  const cloudSelectRow = createElement("div", "control-row");
-  const cloudSelectLabel = createElement("span", "control-label", "雲端 Log 清單：");
-  const cloudSelect = createElement("select", "select");
-  cloudSelect.disabled = true;
-  cloudSelectRow.appendChild(cloudSelectLabel);
-  cloudSelectRow.appendChild(cloudSelect);
-  cloudPane.appendChild(cloudSelectRow);
-
-  const cloudActionRow = createElement("div", "control-row");
-  const refreshBtn = createElement("button", "btn", "重新分析");
-  cloudActionRow.appendChild(refreshBtn);
-  cloudPane.appendChild(cloudActionRow);
-
-  const cloudResults = createElement("div", "cloud-results");
-  cloudPane.appendChild(cloudResults);
-
-  function runCloudAnalysis() {
-    const stateForCloud = store.getState();
-    const currentTotalCells = stateForCloud.cols * stateForCloud.rows;
-    const logStateForCloud = getLogState();
-    const currentOwner = (logStateForCloud.currentLabelName || "").trim();
-
-    cloudResults.innerHTML = "";
-
-    if (!currentOwner) {
-      ownerLabel.textContent = "請先在「Log 管理」中選擇名稱，才能進行雲端分析。";
-      return;
-    }
-
+  if (!currentOwner) {
+    ownerLabel.textContent = "請先在「Log 管理」中選擇名稱，才能進行雲端分析。";
+    cloudSummaryRow.appendChild(ownerLabel);
+    cloudPane.appendChild(cloudSummaryRow);
+  } else {
     ownerLabel.textContent = "目前名稱：" + currentOwner + "，盤面格數：" + currentTotalCells + " 格";
-    cloudResults.textContent = "分析中…";
+    cloudSummaryRow.appendChild(ownerLabel);
+
+    const cloudCountSpan = createElement("span", "cloud-count");
+    cloudCountSpan.style.marginLeft = "0.5rem";
+    cloudSummaryRow.appendChild(cloudCountSpan);
+
+    cloudPane.appendChild(cloudSummaryRow);
+
+    const cloudSelectRow = createElement("div", "control-row");
+    const cloudSelectLabel = createElement("span", "control-label", "雲端 Log 清單：");
+    const cloudSelect = createElement("select", "select");
+    cloudSelect.disabled = true; // 僅顯示用
+    cloudSelectRow.appendChild(cloudSelectLabel);
+    cloudSelectRow.appendChild(cloudSelect);
+    cloudPane.appendChild(cloudSelectRow);
+
+    const cloudResults = createElement("div", "cloud-results");
+    cloudPane.appendChild(cloudResults);
 
     fetch("src/logs/logs.json")
       .then((res) => res.json())
@@ -558,6 +547,7 @@ export function initControls() {
           return;
         }
 
+        // 篩選：同一個人名 + 同一格數
         const targetOwner = currentOwner;
         const targetTotal = currentTotalCells;
 
@@ -578,6 +568,7 @@ export function initControls() {
           return;
         }
 
+        // 讀取所有符合的檔案
         const loadPromises = filteredMeta.map((meta) => {
           const url = "src/logs/" + meta.path;
           return fetch(url)
@@ -626,6 +617,7 @@ export function initControls() {
             });
           });
 
+          // 依時間排序（舊 -> 新）
           processed.sort((a, b) => {
             const va = String(a.createdAt);
             const vb = String(b.createdAt);
@@ -707,9 +699,6 @@ export function initControls() {
       });
   }
 
-  refreshBtn.onclick = () => {
-    runCloudAnalysis();
-  };
 
   // ========== Tab 3 & 4：由 statsView.js 負責填入內容 ==========
 }

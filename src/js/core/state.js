@@ -1,6 +1,11 @@
+const LS_GRID_KEY='scratchReasoner.gridPreset';
 import { GRID_PRESETS, DEFAULT_PRESET_ID } from "../config/gridPresets.js";
 
 function createInitialState() {
+  let savedPreset=(typeof localStorage!=='undefined')&&localStorage.getItem(LS_GRID_KEY);
+  let preset=null;
+  if(savedPreset){ preset=GRID_PRESETS.find(p=>p.id===savedPreset); }
+  if(!preset){
   const preset = GRID_PRESETS.find(p => p.id === DEFAULT_PRESET_ID) || GRID_PRESETS[0];
   const total = preset.cols * preset.rows;
 
@@ -48,7 +53,11 @@ class Store {
   }
 
   setGridPreset(presetId) {
-    const preset = GRID_PRESETS.find(p => p.id === presetId);
+    let savedPreset=(typeof localStorage!=='undefined')&&localStorage.getItem(LS_GRID_KEY);
+  let preset=null;
+  if(savedPreset){ preset=GRID_PRESETS.find(p=>p.id===savedPreset); }
+  if(!preset){
+  const preset = GRID_PRESETS.find(p => p.id === presetId);
     if (!preset) return;
     const total = preset.cols * preset.rows;
     const cells = Array.from({ length: total }, (_, i) => ({
@@ -56,6 +65,7 @@ class Store {
       value: null,
       revealed: false
     }));
+    if(typeof localStorage!=='undefined'){localStorage.setItem(LS_GRID_KEY,preset.id);} 
     this.update({
       gridPresetId: preset.id,
       cols: preset.cols,
@@ -82,10 +92,12 @@ class Store {
       revealed: numeric !== null
     };
 
+    if(typeof localStorage!=='undefined'){localStorage.setItem(LS_GRID_KEY,preset.id);} 
     this.update({ cells });
   }
 
   setShowIndex(flag) {
+    if(typeof localStorage!=='undefined'){localStorage.setItem(LS_GRID_KEY,preset.id);} 
     this.update({ showIndex: !!flag });
   }
 
