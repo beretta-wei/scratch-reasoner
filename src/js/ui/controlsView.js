@@ -16,6 +16,21 @@ import {
   getLogsForCurrentView
 } from "../core/logStore.js";
 
+
+function downloadJsonFile(filename, dataObj) {
+  if (!dataObj) return;
+  const json = JSON.stringify(dataObj, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function initControls() {
   const root = $("#controls-root");
   root.innerHTML = "";
@@ -390,6 +405,62 @@ export function initControls() {
   };
   bottomRow.appendChild(clearStorageBtn);
 
+  const exportCurrentBtn = createElement("button", "btn", "匯出此 Log");
+  exportCurrentBtn.onclick = () => {
+    const state = getLogState();
+    if (!state.activeLogId) {
+      window.alert("目前沒有可匯出的 Log。");
+      return;
+    }
+    const payload = buildExportPayloadForActiveLog();
+    if (!payload) {
+      window.alert("目前沒有可匯出的 Log。");
+      return;
+    }
+    const safeName = (payload.labelName || "Log").replace(/[^\w\-]+/g, "_");
+    const now = new Date();
+    const ts = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      "-",
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0"),
+      String(now.getSeconds()).padStart(2, "0")
+    ].join("");
+    const filename = `log_${safeName}_${ts}.json`;
+    downloadJsonFile(filename, payload);
+    window.alert("Log 已匯出成功！");
+  };
+  bottomRow.appendChild(exportCurrentBtn);
+
+  const exportAllBtn = createElement("button", "btn", "匯出全部 Log");
+  exportAllBtn.onclick = () => {
+    const state = getLogState();
+    if (!state.logs || state.logs.length === 0) {
+      window.alert("目前沒有可匯出的 Log。");
+      return;
+    }
+    const payload = buildExportPayloadForAllLogs();
+    if (!payload || !payload.logs || payload.logs.length === 0) {
+      window.alert("目前沒有可匯出的 Log。");
+      return;
+    }
+    const now = new Date();
+    const ts = [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, "0"),
+      String(now.getDate()).padStart(2, "0"),
+      "-",
+      String(now.getHours()).padStart(2, "0"),
+      String(now.getMinutes()).padStart(2, "0"),
+      String(now.getSeconds()).padStart(2, "0")
+    ].join("");
+    const filename = `logs_all_${ts}.json`;
+    downloadJsonFile(filename, payload);
+    window.alert("全部 Log 已匯出成功！");
+  };
+  bottomRow.appendChild(exportAllBtn);
 
   logsPane.appendChild(bottomRow);
 
@@ -416,17 +487,3 @@ export function initControls() {
 
   // ========== Tab 3 & 4：由 statsView.js 負責填入內容 ==========
 }
-function downloadJsonFile(filename, dataObj) {
-  if (!dataObj) return;
-  const json = JSON.stringify(dataObj, null, 2);
-  const blob = new Blob([json], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-}
-
