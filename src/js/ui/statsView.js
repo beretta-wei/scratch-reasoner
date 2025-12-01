@@ -6,7 +6,112 @@ import { runSpeedReverse } from "../core/speedReverse.js";
 import { generatePermutationFromSpeed } from "../core/speedEngine.js";
 
 let lastCandidates = null;
-let lastRange = null;
+
+function buildPositionStats(candidates, kind) {
+  // kind: "major" | "minor"
+  const map = new Map();
+  const totalSpeeds = candidates.length || 1;
+
+  candidates.forEach(cand => {
+    const positions = kind === "major" ? (cand.majorPositions || []) : (cand.minorPositions || []);
+    positions.forEach(p => {
+      const key = `${p.col}-${p.row}`;
+      const prev = map.get(key) || { col: p.col, row: p.row, count: 0 };
+      prev.count += 1;
+      map.set(key, prev);
+    });
+  });
+
+  const list = Array.from(map.values()).map(item => {
+    const ratio = (item.count / totalSpeeds) * 100;
+    return {
+      col: item.col,
+      row: item.row,
+      count: item.count,
+      ratio
+    };
+  });
+
+  list.sort((a, b) => {
+    if (b.ratio !== a.ratio) return b.ratio - a.ratio;
+    if (b.count !== a.count) return b.count - a.count;
+    const aval = a.col * 1000 + a.row;
+    const bval = b.col * 1000 + b.row;
+    return aval - bval;
+  });
+
+  return { stats: list, totalSpeeds };
+}
+
+function createStatsTable(titleText, rows, totalSpeeds, limit) {
+  const container = createElement("div", "stats-block");
+
+  const title = createElement("div", "stats-subtitle", titleText);
+  container.appendChild(title);
+
+  if (!rows || rows.length === 0) {
+    const empty = createElement("div", "stats-placeholder", "目前沒有統計資料。");
+    container.appendChild(empty);
+    return container;
+  }
+
+  const table = createElement("table", "stats-table");
+  const thead = createElement("thead");
+  const headRow = createElement("tr");
+  ["格子位置", "出現次數", "比例"].forEach(t => {
+    const th = createElement("th", "", t);
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = createElement("tbody");
+  const take = typeof limit === "number" ? Math.min(limit, rows.length) : rows.length;
+  for (let i = 0; i < take; i++) {
+    const r = rows[i];
+    const tr = createElement("tr");
+    const posTd = createElement("td", "", `${r.col} * ${r.row}`);
+    const countTd = createElement("td", "", `${r.count} 次`);
+    const ratioTd = createElement("td", "", `${r.ratio.toFixed(0)}%`);
+    tr.appendChild(posTd);
+    tr.appendChild(countTd);
+    tr.appendChild(ratioTd);
+    tbody.appendChild(tr);
+  }
+  table.appendChild(tbody);
+
+  container.appendChild(table);
+  return container;
+}
+
+function createToggleSection(buttonText, fullRows) {
+  const wrap = createElement("div", "stats-toggle-wrap");
+  const btn = createElement("button", "btn-secondary", buttonText);
+  const body = createElement("div", "stats-toggle-body");
+  body.style.display = "none";
+
+  btn.onclick = () => {
+    const visible = body.style.display !== "none";
+    body.style.display = visible ? "none" : "block";
+  };
+
+  wrap.appendChild(btn);
+
+  if (!fullRows || fullRows.length === 0) {
+    const empty = createElement("div", "stats-placeholder", "目前沒有統計資料。");
+    body.appendChild(empty);
+  } else {
+    const table = createStatsTable("", fullRows, 0, undefined);
+    // 移除標題，因為這個區塊的標題由按鈕代表
+    if (table.firstChild) {
+      table.removeChild(table.firstChild);
+    }
+    body.appendChild(table);
+  }
+
+  wrap.appendChild(body);
+  return wrap;
+}
 
 export function initStats() {
   const basicRoot = $("#tab-basic-stats");
@@ -14,7 +119,7 @@ export function initStats() {
   const inferenceRoot = $("#tab-inference");
   const legacyRoot = $("#stats-root");
 
-  // 基本統計區
+  // 基本統計
   const renderBasic = () => {
     if (!basicRoot) return;
     const stats = computeStats(store.getState());
@@ -40,11 +145,11 @@ export function initStats() {
     heatmapRoot.appendChild(placeholder);
   }
 
-  // 推理結果：逆推 Speed + Fast Filter
+  // 推理結果：逆推 Speed + Fast Filter + 推薦格
   if (inferenceRoot) {
     inferenceRoot.innerHTML = "";
 
-    const title = createElement("div", "stats-section-title", "逆推 Speed（V2）");
+    const title = createElement("div", "stats-section-title", "逆推 Speed（V3）");
 
     const form = createElement("div", "speed-form");
     const rangeRow = createElement("div", "control-row");
@@ -88,14 +193,13 @@ export function initStats() {
     inferenceRoot.appendChild(form);
     inferenceRoot.appendChild(resultContainer);
 
-    function renderCandidates(candidates, fromCount) {
+    function renderAggregated(candidates, fromCount) {
       resultContainer.innerHTML = "";
+
       if (!candidates || candidates.length === 0) {
+        summarySpan.textContent = fromCount != null ? `Speed 候選：${fromCount} → 0` : "目前沒有任何符合的 Speed。";
         const empty = createElement("div", "stats-placeholder", "目前沒有任何符合的 Speed。");
         resultContainer.appendChild(empty);
-        summarySpan.textContent = fromCount != null
-          ? `Speed 候選：${fromCount} → 0`
-          : "";
         return;
       }
 
@@ -106,43 +210,25 @@ export function initStats() {
         summarySpan.textContent = `Speed 候選：${toCount}`;
       }
 
-      candidates.forEach((c) => {
-        const block = createElement("div", "speed-candidate-block");
-        const head = createElement(
-          "div",
-          "speed-candidate-head",
-          `Speed：${c.speed}`
-        );
-        block.appendChild(head);
+      // 統計大獎 / 小獎位置
+      const majorStatsInfo = buildPositionStats(candidates, "major");
+      const minorStatsInfo = buildPositionStats(candidates, "minor");
 
-        if (c.majorPositions && c.majorPositions.length > 0) {
-          const majorTitle = createElement("div", "speed-subtitle", "大獎位置：");
-          block.appendChild(majorTitle);
-          c.majorPositions.forEach((p) => {
-            const line = createElement(
-              "div",
-              "speed-line",
-              `號碼 ${p.num} → ${p.col} * ${p.row}`
-            );
-            block.appendChild(line);
-          });
-        }
+      // TOP 10 大獎
+      const majorTop = createStatsTable("推薦刮點（大獎） TOP 10", majorStatsInfo.stats, majorStatsInfo.totalSpeeds, 10);
+      resultContainer.appendChild(majorTop);
 
-        if (c.minorPositions && c.minorPositions.length > 0) {
-          const minorTitle = createElement("div", "speed-subtitle", "小獎位置：");
-          block.appendChild(minorTitle);
-          c.minorPositions.forEach((p) => {
-            const line = createElement(
-              "div",
-              "speed-line",
-              `號碼 ${p.num} → ${p.col} * ${p.row}`
-            );
-            block.appendChild(line);
-          });
-        }
+      // TOP 10 小獎
+      const minorTop = createStatsTable("推薦刮點（小獎） TOP 10", minorStatsInfo.stats, minorStatsInfo.totalSpeeds, 10);
+      resultContainer.appendChild(minorTop);
 
-        resultContainer.appendChild(block);
-      });
+      // 折疊：完整列表（大獎）
+      const majorAllSection = createToggleSection("顯示全部 大獎列表", majorStatsInfo.stats);
+      resultContainer.appendChild(majorAllSection);
+
+      // 折疊：完整列表（小獎）
+      const minorAllSection = createToggleSection("顯示全部 小獎列表", minorStatsInfo.stats);
+      resultContainer.appendChild(minorAllSection);
     }
 
     runBtn.onclick = () => {
@@ -166,7 +252,6 @@ export function initStats() {
         resultContainer.innerHTML = "";
         summarySpan.textContent = "";
         lastCandidates = null;
-        lastRange = null;
         return;
       }
 
@@ -178,7 +263,6 @@ export function initStats() {
         resultContainer.innerHTML = "";
         summarySpan.textContent = "";
         lastCandidates = null;
-        lastRange = null;
         return;
       }
 
@@ -191,7 +275,6 @@ export function initStats() {
         resultContainer.innerHTML = "";
         summarySpan.textContent = "";
         lastCandidates = null;
-        lastRange = null;
         return;
       }
 
@@ -211,10 +294,8 @@ export function initStats() {
       statusSpan.textContent = `已檢查 ${result.scannedCount} 組 Speed，符合條件：${result.matchedCount} 組`;
 
       lastCandidates = result.candidates || [];
-      lastRange = { start, end };
 
-      // 初次顯示：fromCount = null
-      renderCandidates(lastCandidates, null);
+      renderAggregated(lastCandidates, null);
     };
 
     filterBtn.onclick = () => {
@@ -261,7 +342,6 @@ export function initStats() {
           return;
         }
 
-        // 重新計算 lucky 位置（避免盤面設定或格子調整後資訊不同）
         const lucky = getLuckyNumbersForActiveLog();
         const majors = (lucky && Array.isArray(lucky.major)) ? lucky.major : [];
         const minors = (lucky && Array.isArray(lucky.minor)) ? lucky.minor : [];
@@ -305,11 +385,11 @@ export function initStats() {
 
       statusSpan.textContent = `重新比對完畢，剩餘：${lastCandidates.length} 組。`;
 
-      renderCandidates(lastCandidates, fromCount);
+      renderAggregated(lastCandidates, fromCount);
     };
   }
 
-  // 舊版 stats-root 相容處理：顯示基本統計
+  // 舊版 stats-root 相容處理
   if (legacyRoot) {
     const renderLegacy = () => {
       const stats = computeStats(store.getState());
