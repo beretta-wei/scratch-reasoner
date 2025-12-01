@@ -653,18 +653,23 @@ export function initControls() {
             majorsBlock.appendChild(majorsHeader);
 
             
-const majorsBody = createElement("div", "cloud-body");
-const majorNums = item.majors.slice().sort((a,b)=>a-b);
-majorNums.forEach((num)=>{
-  const positions = item.logCells.filter(c=>c.value===num);
-  positions.forEach((cell)=>{
-    const idx = cell.index;
-    const c = (idx % item.cols) + 1;
-    const r = Math.floor(idx / item.cols) + 1;
-    majorsBody.appendChild(createElement("div","cloud-line", c + " * " + r));
-  });
-});
-majorsBlock.appendChild(majorsBody);
+            const majorsBody = createElement("div", "cloud-body");
+            const majorNums = item.majors.slice().sort((a, b) => a - b);
+            majorNums.forEach((num) => {
+              const positions = item.logCells.filter(c => c.value === num);
+              positions.forEach((cell) => {
+                const idx = cell.index;
+                const c = (idx % item.cols) + 1;
+                const r = Math.floor(idx / item.cols) + 1;
+                const line = createElement(
+                  "div",
+                  "cloud-line",
+                  c + " * " + r
+                );
+                majorsBody.appendChild(line);
+              });
+            });
+            majorsBlock.appendChild(majorsBody);
 
             wrap.appendChild(majorsBlock);
 
@@ -677,18 +682,23 @@ majorsBlock.appendChild(majorsBody);
             minorsBlock.appendChild(minorsHeader);
 
             
-const minorsBody = createElement("div", "cloud-body");
-const minorNums = item.minors.slice().sort((a,b)=>a-b);
-minorNums.forEach((num)=>{
-  const positions = item.logCells.filter(c=>c.value===num);
-  positions.forEach((cell)=>{
-    const idx = cell.index;
-    const c = (idx % item.cols) + 1;
-    const r = Math.floor(idx / item.cols) + 1;
-    minorsBody.appendChild(createElement("div","cloud-line", c + " * " + r));
-  });
-});
-minorsBlock.appendChild(minorsBody);
+            const minorsBody = createElement("div", "cloud-body");
+            const minorNums = item.minors.slice().sort((a, b) => a - b);
+            minorNums.forEach((num) => {
+              const positions = item.logCells.filter(c => c.value === num);
+              positions.forEach((cell) => {
+                const idx = cell.index;
+                const c = (idx % item.cols) + 1;
+                const r = Math.floor(idx / item.cols) + 1;
+                const line = createElement(
+                  "div",
+                  "cloud-line",
+                  c + " * " + r
+                );
+                minorsBody.appendChild(line);
+              });
+            });
+            minorsBlock.appendChild(minorsBody);
 
             wrap.appendChild(minorsBlock);
 

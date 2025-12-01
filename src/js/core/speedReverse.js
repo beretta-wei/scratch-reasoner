@@ -14,25 +14,22 @@ export function runSpeedReverse(params) {
   const start = Number.isInteger(speedStart) ? speedStart : 0;
   const end = Number.isInteger(speedEnd) ? speedEnd : start;
 
-  const candidates = [];
-  let scannedCount = 0;
-
   const majors = (luckyNumbers && Array.isArray(luckyNumbers.major)) ? luckyNumbers.major : [];
   const minors = (luckyNumbers && Array.isArray(luckyNumbers.minor)) ? luckyNumbers.minor : [];
+
+  const candidates = [];
+  let scannedCount = 0;
 
   for (let s = start; s <= end; s++) {
     scannedCount++;
     const grid = generatePermutationFromSpeed(s, total);
 
-    // 早期中斷：只要有一格不符合就跳下一個 speed
     let ok = true;
     for (let i = 0; i < revealedCells.length; i++) {
       const cell = revealedCells[i];
       const idx = cell.index;
       const v = cell.value;
-      if (idx < 0 || idx >= total) {
-        continue;
-      }
+      if (idx < 0 || idx >= total) continue;
       if (grid[idx] !== v) {
         ok = false;
         break;
@@ -40,7 +37,6 @@ export function runSpeedReverse(params) {
     }
     if (!ok) continue;
 
-    // 計算此 speed 下 lucky numbers 的位置
     const majorPositions = [];
     const minorPositions = [];
 
@@ -74,6 +70,8 @@ export function runSpeedReverse(params) {
       minorPositions
     });
   }
+
+  candidates.sort((a, b) => a.speed - b.speed);
 
   return {
     scannedCount,

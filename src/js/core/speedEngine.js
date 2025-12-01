@@ -2,12 +2,10 @@ export function generatePermutationFromSpeed(speed, total) {
   const size = Number.isInteger(total) && total > 0 ? total : 0;
   const arr = Array.from({ length: size }, (_, i) => i + 1);
 
-  // 以 speed 為種子建立簡單的線性同餘亂數產生器
   let x = (Number.isInteger(speed) ? speed : 0) >>> 0;
   if (x === 0) x = 1;
 
   function next() {
-    // 32-bit LCG
     x = (x * 1664525 + 1013904223) >>> 0;
     return x;
   }
