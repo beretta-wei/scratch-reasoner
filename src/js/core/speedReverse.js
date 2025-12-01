@@ -1,5 +1,6 @@
 import { generatePermutationFromSpeed } from "./speedEngine.js";
 
+// 執行逆推 Speed：針對指定範圍的 speed，尋找符合「已翻開格子」的排列，並計算大獎 / 小獎位置
 export function runSpeedReverse(params) {
   const {
     cols,
@@ -22,7 +23,8 @@ export function runSpeedReverse(params) {
 
   for (let s = start; s <= end; s++) {
     scannedCount++;
-    const grid = generatePermutationFromSpeed(s, total);
+
+    const grid = generatePermutationFromSpeed(s, cols, rows);
 
     let ok = true;
     for (let i = 0; i < revealedCells.length; i++) {

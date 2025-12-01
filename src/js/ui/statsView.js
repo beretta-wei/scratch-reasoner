@@ -12,9 +12,10 @@ function buildPositionStats(candidates, kind) {
   const map = new Map();
   const totalSpeeds = candidates.length || 1;
 
-  candidates.forEach(cand => {
-    const positions = kind === "major" ? (cand.majorPositions || []) : (cand.minorPositions || []);
-    positions.forEach(p => {
+  candidates.forEach((cand) => {
+    const positions =
+      kind === "major" ? cand.majorPositions || [] : cand.minorPositions || [];
+    positions.forEach((p) => {
       const key = `${p.col}-${p.row}`;
       const prev = map.get(key) || { col: p.col, row: p.row, count: 0 };
       prev.count += 1;
@@ -22,13 +23,13 @@ function buildPositionStats(candidates, kind) {
     });
   });
 
-  const list = Array.from(map.values()).map(item => {
+  const list = Array.from(map.values()).map((item) => {
     const ratio = (item.count / totalSpeeds) * 100;
     return {
       col: item.col,
       row: item.row,
       count: item.count,
-      ratio
+      ratio,
     };
   });
 
@@ -43,11 +44,13 @@ function buildPositionStats(candidates, kind) {
   return { stats: list, totalSpeeds };
 }
 
-function createStatsTable(titleText, rows, totalSpeeds, limit) {
+function createStatsTable(titleText, rows, limit) {
   const container = createElement("div", "stats-block");
 
-  const title = createElement("div", "stats-subtitle", titleText);
-  container.appendChild(title);
+  if (titleText) {
+    const title = createElement("div", "stats-subtitle", titleText);
+    container.appendChild(title);
+  }
 
   if (!rows || rows.length === 0) {
     const empty = createElement("div", "stats-placeholder", "目前沒有統計資料。");
@@ -58,7 +61,7 @@ function createStatsTable(titleText, rows, totalSpeeds, limit) {
   const table = createElement("table", "stats-table");
   const thead = createElement("thead");
   const headRow = createElement("tr");
-  ["格子位置", "出現次數", "比例"].forEach(t => {
+  ["格子位置", "出現次數", "比例"].forEach((t) => {
     const th = createElement("th", "", t);
     headRow.appendChild(th);
   });
@@ -101,11 +104,7 @@ function createToggleSection(buttonText, fullRows) {
     const empty = createElement("div", "stats-placeholder", "目前沒有統計資料。");
     body.appendChild(empty);
   } else {
-    const table = createStatsTable("", fullRows, 0, undefined);
-    // 移除標題，因為這個區塊的標題由按鈕代表
-    if (table.firstChild) {
-      table.removeChild(table.firstChild);
-    }
+    const table = createStatsTable("", fullRows, undefined);
     body.appendChild(table);
   }
 
@@ -119,7 +118,7 @@ export function initStats() {
   const inferenceRoot = $("#tab-inference");
   const legacyRoot = $("#stats-root");
 
-  // 基本統計
+  // 基本統計區塊
   const renderBasic = () => {
     if (!basicRoot) return;
     const stats = computeStats(store.getState());
@@ -140,16 +139,20 @@ export function initStats() {
   if (heatmapRoot) {
     heatmapRoot.innerHTML = "";
     const title = createElement("div", "stats-section-title", "Heatmap（待實作）");
-    const placeholder = createElement("div", "stats-placeholder", "未來會顯示每格可能性強度");
+    const placeholder = createElement(
+      "div",
+      "stats-placeholder",
+      "未來會顯示每格可能性強度"
+    );
     heatmapRoot.appendChild(title);
     heatmapRoot.appendChild(placeholder);
   }
 
-  // 推理結果：逆推 Speed + Fast Filter + 推薦格
+  // 推理結果：逆推 Speed（V4，多模型）+ Fast Filter + 推薦格
   if (inferenceRoot) {
     inferenceRoot.innerHTML = "";
 
-    const title = createElement("div", "stats-section-title", "逆推 Speed（V3）");
+    const title = createElement("div", "stats-section-title", "逆推 Speed（V4 通用多模型）");
 
     const form = createElement("div", "speed-form");
     const rangeRow = createElement("div", "control-row");
@@ -157,13 +160,13 @@ export function initStats() {
     const startLabel = createElement("span", "control-label", "起始 Speed：");
     const startInput = createElement("input", "input");
     startInput.type = "number";
-    startInput.placeholder = "例如 30000";
+    startInput.placeholder = "例如 0";
     startInput.value = "0";
 
     const endLabel = createElement("span", "control-label", "結束 Speed：");
     const endInput = createElement("input", "input");
     endInput.type = "number";
-    endInput.placeholder = "例如 39999";
+    endInput.placeholder = "例如 9999";
     endInput.value = "9999";
 
     rangeRow.appendChild(startLabel);
@@ -197,8 +200,15 @@ export function initStats() {
       resultContainer.innerHTML = "";
 
       if (!candidates || candidates.length === 0) {
-        summarySpan.textContent = fromCount != null ? `Speed 候選：${fromCount} → 0` : "目前沒有任何符合的 Speed。";
-        const empty = createElement("div", "stats-placeholder", "目前沒有任何符合的 Speed。");
+        summarySpan.textContent =
+          fromCount != null
+            ? `Speed 候選：${fromCount} → 0`
+            : "目前沒有任何符合的 Speed。";
+        const empty = createElement(
+          "div",
+          "stats-placeholder",
+          "目前沒有任何符合的 Speed。"
+        );
         resultContainer.appendChild(empty);
         return;
       }
@@ -210,24 +220,33 @@ export function initStats() {
         summarySpan.textContent = `Speed 候選：${toCount}`;
       }
 
-      // 統計大獎 / 小獎位置
       const majorStatsInfo = buildPositionStats(candidates, "major");
       const minorStatsInfo = buildPositionStats(candidates, "minor");
 
-      // TOP 10 大獎
-      const majorTop = createStatsTable("推薦刮點（大獎） TOP 10", majorStatsInfo.stats, majorStatsInfo.totalSpeeds, 10);
+      const majorTop = createStatsTable(
+        "推薦刮點（大獎） TOP 10",
+        majorStatsInfo.stats,
+        10
+      );
       resultContainer.appendChild(majorTop);
 
-      // TOP 10 小獎
-      const minorTop = createStatsTable("推薦刮點（小獎） TOP 10", minorStatsInfo.stats, minorStatsInfo.totalSpeeds, 10);
+      const minorTop = createStatsTable(
+        "推薦刮點（小獎） TOP 10",
+        minorStatsInfo.stats,
+        10
+      );
       resultContainer.appendChild(minorTop);
 
-      // 折疊：完整列表（大獎）
-      const majorAllSection = createToggleSection("顯示全部 大獎列表", majorStatsInfo.stats);
+      const majorAllSection = createToggleSection(
+        "顯示全部 大獎列表",
+        majorStatsInfo.stats
+      );
       resultContainer.appendChild(majorAllSection);
 
-      // 折疊：完整列表（小獎）
-      const minorAllSection = createToggleSection("顯示全部 小獎列表", minorStatsInfo.stats);
+      const minorAllSection = createToggleSection(
+        "顯示全部 小獎列表",
+        minorStatsInfo.stats
+      );
       resultContainer.appendChild(minorAllSection);
     }
 
@@ -325,7 +344,7 @@ export function initStats() {
 
       lastCandidates.forEach((cand) => {
         const s = cand.speed;
-        const grid = generatePermutationFromSpeed(s, total);
+        const grid = generatePermutationFromSpeed(s, cols, rows);
 
         let ok = true;
         for (let i = 0; i < revealedCells.length; i++) {
@@ -343,8 +362,10 @@ export function initStats() {
         }
 
         const lucky = getLuckyNumbersForActiveLog();
-        const majors = (lucky && Array.isArray(lucky.major)) ? lucky.major : [];
-        const minors = (lucky && Array.isArray(lucky.minor)) ? lucky.minor : [];
+        const majors =
+          lucky && Array.isArray(lucky.major) ? lucky.major : [];
+        const minors =
+          lucky && Array.isArray(lucky.minor) ? lucky.minor : [];
 
         const majorPositions = [];
         const minorPositions = [];
