@@ -424,3 +424,36 @@ body {
   background: var(--accent-soft);
   color: var(--text);
 }
+
+
+
+/* === 世界模型 / 逆推 Speed 子頁籤樣式 === */
+.stats-subtabs-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.stats-subtab-btn {
+  padding: 4px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #f5f5f5;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.stats-subtab-btn--active {
+  background: #007bff;
+  color: #fff;
+  border-color: #007bff;
+}
+
+.stats-subtabs-content {
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+
+.stats-subtab-pane {
+  /* 由 JS 控制 display，預設顯示 */
+}

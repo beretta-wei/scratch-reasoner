@@ -4,6 +4,7 @@ import { getLuckyNumbersForActiveLog } from "../core/logStore.js";
 import { $, createElement } from "../utils/dom.js";
 import { runSpeedReverse } from "../core/speedReverse.js";
 import { generatePermutationFromSpeed } from "../core/speedEngine.js";
+import { initWorldModelView } from "./worldModelView.js";
 
 let lastCandidates = null;
 
@@ -408,6 +409,63 @@ export function initStats() {
 
       renderAggregated(lastCandidates, fromCount);
     };
+
+    // === 建立「逆推 Speed」與「世界模型 v1」子頁籤 ===
+    const existingChildren = Array.from(inferenceRoot.childNodes);
+    inferenceRoot.innerHTML = "";
+
+    const tabsHeader = createElement("div", "stats-subtabs-header");
+    const speedTabBtn = createElement(
+      "button",
+      "stats-subtab-btn stats-subtab-btn--active",
+      "逆推 Speed"
+    );
+    const worldTabBtn = createElement(
+      "button",
+      "stats-subtab-btn",
+      "世界模型 v1"
+    );
+    tabsHeader.appendChild(speedTabBtn);
+    tabsHeader.appendChild(worldTabBtn);
+
+    const tabsContent = createElement("div", "stats-subtabs-content");
+    const speedPane = createElement(
+      "div",
+      "stats-subtab-pane stats-subtab-pane--active"
+    );
+    const worldPane = createElement("div", "stats-subtab-pane");
+
+    existingChildren.forEach((child) => {
+      speedPane.appendChild(child);
+    });
+
+    tabsContent.appendChild(speedPane);
+    tabsContent.appendChild(worldPane);
+
+    inferenceRoot.appendChild(tabsHeader);
+    inferenceRoot.appendChild(tabsContent);
+
+    // 初始化世界模型畫面（放在右側子頁籤）
+    initWorldModelView(worldPane);
+
+    const switchTab = (active) => {
+      if (active === "speed") {
+        speedTabBtn.classList.add("stats-subtab-btn--active");
+        worldTabBtn.classList.remove("stats-subtab-btn--active");
+        speedPane.style.display = "";
+        worldPane.style.display = "none";
+      } else {
+        speedTabBtn.classList.remove("stats-subtab-btn--active");
+        worldTabBtn.classList.add("stats-subtab-btn--active");
+        speedPane.style.display = "none";
+        worldPane.style.display = "";
+      }
+    };
+
+    switchTab("speed");
+    speedTabBtn.onclick = () => switchTab("speed");
+    worldTabBtn.onclick = () => switchTab("world");
+
   }
 
   // 舊版 stats-root 相容處理
