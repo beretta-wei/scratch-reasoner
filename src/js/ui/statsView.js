@@ -482,27 +482,3 @@ export function initStats() {
   }
 }
 
-// === 追加：大獎/小獎 Speed 推論 ===
-{
-  const prize = state.luckyNumbers || {};
-  const major = prize.major || [];
-  const minor = prize.minor || [];
-
-  const srTitle = createElement("div","stats-section-title","逆推 Speed：大獎位置");
-  inferenceRoot.appendChild(srTitle);
-
-  major.forEach(num=>{
-    const pos = speedBoard.indexOf(num);
-    const line=createElement("div","stats-line",`號碼 ${num} → ${pos>=0?`c${(pos%cols)+1}*r${Math.floor(pos/cols)+1}`:"未出現"}`);
-    inferenceRoot.appendChild(line);
-  });
-
-  const smTitle = createElement("div","stats-section-title","逆推 Speed：小獎位置");
-  inferenceRoot.appendChild(smTitle);
-
-  minor.forEach(num=>{
-    const pos = speedBoard.indexOf(num);
-    const line=createElement("div","stats-line",`號碼 ${num} → ${pos>=0?`c${(pos%cols)+1}*r${Math.floor(pos/cols)+1}`:"未出現"}`);
-    inferenceRoot.appendChild(line);
-  });
-}
