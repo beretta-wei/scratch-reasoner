@@ -470,11 +470,5 @@ export function initStats() {
     speedTabBtn.onclick = () => switchTab("speed");
     worldTabBtn.onclick = () => switchTab("world");
 
-ats.totalCells}</div>
-      `;
-    };
-    renderLegacy();
-    store.subscribe(renderLegacy);
   }
 }
-
