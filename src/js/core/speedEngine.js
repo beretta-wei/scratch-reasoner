@@ -113,9 +113,8 @@ function generateM4(seed, cols, rows) {
   const allVals = Array.from({ length: total }, (_, i) => i + 1);
   shuffleArray(allVals, next);
 
-  const remaining = new Set(allVals);
+  const remainingM4 = new Set(allVals);
 
-  const remaining = new Set(allVals);
 
   // 將值平均分配到各 block
   const blockMap = new Map();
@@ -144,19 +143,19 @@ function generateM4(seed, cols, rows) {
     const bucket = blockMap.get(key) || [];
     let used = blockUsed.get(key) || 0;
     if (used >= bucket.length) {
-      // 該區用完就從 remaining 中取一個尚未使用的數字
-      const iter = remaining.values();
+      // 該區用完就從 remainingM4 中取一個尚未使用的數字
+      const iter = remainingM4.values();
       const first = iter.next();
       if (!first.done) {
         grid[idx] = first.value;
-        remaining.delete(first.value);
+        remainingM4.delete(first.value);
       } else {
         grid[idx] = 1; // 理論上不會發生，保險處理
       }
     } else {
       const v = bucket[used];
       grid[idx] = v;
-      remaining.delete(v);
+      remainingM4.delete(v);
       used += 1;
       blockUsed.set(key, used);
     }
@@ -173,7 +172,7 @@ function generateM5(seed, cols, rows) {
   const vals = Array.from({ length: total }, (_, i) => i + 1);
   shuffleArray(vals, next);
 
-  const remaining = new Set(vals);
+  const remainingM5 = new Set(vals);
 
   // 將整體切成 4 個區：左上、右上、左下、右下
   const midRow = Math.floor(rows / 2);
@@ -212,7 +211,7 @@ function generateM5(seed, cols, rows) {
     if (u < bucket.length) {
       const v = bucket[u];
       grid[idx] = v;
-      remaining.delete(v);
+      remainingM5.delete(v);
       used[bucketName] = u + 1;
     } else {
       // 該區用完就從其他區塞
@@ -222,18 +221,18 @@ function generateM5(seed, cols, rows) {
         if (used[k] < quads[k].length) {
           const v2 = quads[k][used[k]];
           grid[idx] = v2;
-          remaining.delete(v2);
+          remainingM5.delete(v2);
           used[k] += 1;
           filled = true;
           break;
         }
       }
       if (!filled) {
-        const iter = remaining.values();
+        const iter = remainingM5.values();
         const first = iter.next();
         if (!first.done) {
           grid[idx] = first.value;
-          remaining.delete(first.value);
+          remainingM5.delete(first.value);
         } else {
           grid[idx] = 1;
         }
@@ -252,9 +251,8 @@ function generateM6(seed, cols, rows) {
   const allVals = Array.from({ length: total }, (_, i) => i + 1);
   shuffleArray(allVals, next);
 
-  const remaining = new Set(allVals);
+  const remainingM6 = new Set(allVals);
 
-  const remaining = new Set(allVals);
 
   const bigCount = Math.max(5, Math.floor(total * 0.1)); // 10% 作為「大獎候選」
   const bigVals = allVals.slice(total - bigCount);
@@ -273,22 +271,22 @@ function generateM6(seed, cols, rows) {
     if (r >= bottomStartRow && bigIdx < bigVals.length) {
       const v = bigVals[bigIdx++];
       grid[idx] = v;
-      remaining.delete(v);
+      remainingM6.delete(v);
     } else {
       if (smallIdx < smallVals.length) {
         const vSmall = smallVals[smallIdx++];
         grid[idx] = vSmall;
-        remaining.delete(vSmall);
+        remainingM6.delete(vSmall);
       } else if (bigIdx < bigVals.length) {
         const v2 = bigVals[bigIdx++];
         grid[idx] = v2;
-        remaining.delete(v2);
+        remainingM6.delete(v2);
       } else {
-        const iter = remaining.values();
+        const iter = remainingM6.values();
         const first = iter.next();
         if (!first.done) {
           grid[idx] = first.value;
-          remaining.delete(first.value);
+          remainingM6.delete(first.value);
         } else {
           grid[idx] = 1;
         }
@@ -353,7 +351,7 @@ function generateM8(seed, cols, rows) {
   const vals = Array.from({ length: total }, (_, i) => i + 1);
   shuffleArray(vals, next);
 
-  const remaining = new Set(vals);
+  const remainingM8 = new Set(vals);
 
   const grid = new Array(total);
   for (let i = 0; i < total; i++) {
