@@ -410,6 +410,7 @@ export function initStats() {
       renderAggregated(lastCandidates, fromCount);
     };
 
+
     // === 建立「逆推 Speed」與「世界模型 v1」子頁籤 ===
     const existingChildren = Array.from(inferenceRoot.childNodes);
     inferenceRoot.innerHTML = "";
@@ -445,8 +446,8 @@ export function initStats() {
     inferenceRoot.appendChild(tabsHeader);
     inferenceRoot.appendChild(tabsContent);
 
-    // 初始化世界模型畫面（放在右側子頁籤）
-    initWorldModelView(worldPane);
+    // 初始化世界模型畫面（放在右側子頁籤），並取得重新計算函式
+    const renderWorldModel = initWorldModelView(worldPane);
 
     const switchTab = (active) => {
       if (active === "speed") {
@@ -459,6 +460,9 @@ export function initStats() {
         worldTabBtn.classList.add("stats-subtab-btn--active");
         speedPane.style.display = "none";
         worldPane.style.display = "";
+        if (typeof renderWorldModel === "function") {
+          renderWorldModel();
+        }
       }
     };
 
@@ -466,15 +470,7 @@ export function initStats() {
     speedTabBtn.onclick = () => switchTab("speed");
     worldTabBtn.onclick = () => switchTab("world");
 
-  }
-
-  // 舊版 stats-root 相容處理
-  if (legacyRoot) {
-    const renderLegacy = () => {
-      const stats = computeStats(store.getState());
-      legacyRoot.innerHTML = `
-        <div class="stats-section-title">基本統計</div>
-        <div class="stats-line">已翻開格數：<strong>${stats.revealedCount}</strong> / ${stats.totalCells}</div>
+ats.totalCells}</div>
       `;
     };
     renderLegacy();

@@ -1,5 +1,6 @@
 import { store } from "../core/state.js";
 import { getWorldModel, pickNextCellByWorldModel, buildRankedCells } from "../core/worldModel.js";
+import { getLuckyNumbersForActiveLog } from "../core/logStore.js";
 import { createElement } from "../utils/dom.js";
 
 /**
@@ -7,7 +8,7 @@ import { createElement } from "../utils/dom.js";
  * root：由 statsView.js 建立的容器
  */
 export function initWorldModelView(root) {
-  if (!root) return;
+  if (!root) return () => {};
 
   const render = () => {
     const state = store.getState();
@@ -40,57 +41,58 @@ export function initWorldModelView(root) {
     const suggestion = pickNextCellByWorldModel(model, cells);
     
 
-// === 大獎 / 小獎位置推論（世界模型） ===
-const prize = state.luckyNumbers || {};
-const major = prize.major || [];
-const minor = prize.minor || [];
 
-const majorTitle = createElement("div","stats-section-title","大獎（世界模型推論）");
-root.appendChild(majorTitle);
+    // === 大獎 / 小獎位置推論（世界模型） ===
+    const ln = getLuckyNumbersForActiveLog();
+    const major = (ln && Array.isArray(ln.major)) ? ln.major : [];
+    const minor = (ln && Array.isArray(ln.minor)) ? ln.minor : [];
 
-if(major.length===0){
-  root.appendChild(createElement("div","stats-placeholder","未設定大獎號碼"));
-}else{
-  const tbl = createElement("table","stats-table");
-  const th = createElement("tr");
-  th.appendChild(createElement("th","","號碼"));
-  th.appendChild(createElement("th","","預測位置"));
-  th.appendChild(createElement("th","","強度"));
-  tbl.appendChild(th);
-  major.forEach(num=>{
-    const ranked = buildRankedCells(model);
-    const best = ranked[0];
-    const tr=createElement("tr");
-    tr.appendChild(createElement("td","",String(num)));
-    tr.appendChild(createElement("td","",`c${best.col}*r${best.row}`));
-    tr.appendChild(createElement("td","",`${(best.score*100).toFixed(1)}%`));
-    tbl.appendChild(tr);
-  });
-  root.appendChild(tbl);
-}
+    const majorTitle = createElement("div","stats-section-title","大獎（世界模型推論）");
+    root.appendChild(majorTitle);
 
-const minorTitle = createElement("div","stats-section-title","小獎（世界模型推論）");
-root.appendChild(minorTitle);
-if(minor.length===0){
-  root.appendChild(createElement("div","stats-placeholder","未設定小獎號碼"));
-}else{
-  const tbl2 = createElement("table","stats-table");
-  const th2 = createElement("tr");
-  th2.appendChild(createElement("th","","號碼"));
-  th2.appendChild(createElement("th","","預測位置"));
-  th2.appendChild(createElement("th","","強度"));
-  tbl2.appendChild(th2);
-  minor.forEach(num=>{
-    const ranked = buildRankedCells(model);
-    const best = ranked[0];
-    const tr=createElement("tr");
-    tr.appendChild(createElement("td","",String(num)));
-    tr.appendChild(createElement("td","",`c${best.col}*r${best.row}`));
-    tr.appendChild(createElement("td","",`${(best.score*100).toFixed(1)}%`));
-    tbl2.appendChild(tr);
-  });
-  root.appendChild(tbl2);
-}
+    if (major.length === 0) {
+      root.appendChild(createElement("div","stats-placeholder","未設定大獎號碼"));
+    } else {
+      const tbl = createElement("table","stats-table");
+      const th = createElement("tr");
+      th.appendChild(createElement("th","","號碼"));
+      th.appendChild(createElement("th","","預測位置"));
+      th.appendChild(createElement("th","","強度"));
+      tbl.appendChild(th);
+      major.forEach((num) => {
+        const rankedMajor = buildRankedCells(model);
+        const best = rankedMajor[0];
+        const tr = createElement("tr");
+        tr.appendChild(createElement("td","",String(num)));
+        tr.appendChild(createElement("td","",`c${best.col}*r${best.row}`));
+        tr.appendChild(createElement("td","",`${(best.score*100).toFixed(1)}%`));
+        tbl.appendChild(tr);
+      });
+      root.appendChild(tbl);
+    }
+
+    const minorTitle = createElement("div","stats-section-title","小獎（世界模型推論）");
+    root.appendChild(minorTitle);
+    if (minor.length === 0) {
+      root.appendChild(createElement("div","stats-placeholder","未設定小獎號碼"));
+    } else {
+      const tbl2 = createElement("table","stats-table");
+      const th2 = createElement("tr");
+      th2.appendChild(createElement("th","","號碼"));
+      th2.appendChild(createElement("th","","預測位置"));
+      th2.appendChild(createElement("th","","強度"));
+      tbl2.appendChild(th2);
+      minor.forEach((num) => {
+        const rankedMinor = buildRankedCells(model);
+        const best = rankedMinor[0];
+        const tr = createElement("tr");
+        tr.appendChild(createElement("td","",String(num)));
+        tr.appendChild(createElement("td","",`c${best.col}*r${best.row}`));
+        tr.appendChild(createElement("td","",`${(best.score*100).toFixed(1)}%`));
+        tbl2.appendChild(tr);
+      });
+      root.appendChild(tbl2);
+    }
 
 const suggestionBlock = createElement("div", "stats-basic-block");
     if (suggestion) {
@@ -153,5 +155,5 @@ const suggestionBlock = createElement("div", "stats-basic-block");
   };
 
   render();
-  store.subscribe(render);
+  return render;
 }
