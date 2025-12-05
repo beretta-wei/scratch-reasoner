@@ -5,8 +5,164 @@ import { $, createElement } from "../utils/dom.js";
 import { runSpeedReverse } from "../core/speedReverse.js";
 import { generatePermutationFromSpeed } from "../core/speedEngine.js";
 import { initWorldModelView } from "./worldModelView.js";
+import { getAdjTailRowsForTarget } from "../core/adjTailModel.js";
 
 let lastCandidates = null;
+
+const TAILFLOW_DIR_LABELS = {
+  R: "右",
+  L: "左",
+  U: "上",
+  D: "下",
+  UR: "右上",
+  UL: "左上",
+  DR: "右下",
+  DL: "左下",
+};
+
+function buildTailFlowPane(tailPane) {
+  if (!tailPane) return () => {};
+
+  tailPane.innerHTML = "";
+
+  const container = createElement("div", "tailflow-root");
+
+  const controlBar = createElement("div", "tailflow-controls");
+  const targetLabel = createElement("label", "tailflow-label", "目標尾號");
+  const targetSelect = createElement("select", "tailflow-select");
+  for (let t = 0; t <= 9; t++) {
+    const opt = createElement("option", "", String(t));
+    opt.value = String(t);
+    if (t === 5) opt.selected = true;
+    targetSelect.appendChild(opt);
+  }
+  targetLabel.appendChild(targetSelect);
+
+  const distLabel = createElement("label", "tailflow-label", "距離上限");
+  const distSelect = createElement("select", "tailflow-select");
+  [1, 2, 3, 4].forEach((d) => {
+    const opt = createElement("option", "", `1 ~ ${d} 格`);
+    opt.value = String(d);
+    if (d === 4) opt.selected = true;
+    distSelect.appendChild(opt);
+  });
+  distLabel.appendChild(distSelect);
+
+  const dirLabel = createElement("label", "tailflow-label", "方向");
+  const dirSelect = createElement("select", "tailflow-select");
+  [
+    { value: "all", text: "全部" },
+    { value: "straight", text: "直向/橫向" },
+    { value: "diag", text: "斜向" },
+  ].forEach((optCfg) => {
+    const opt = createElement("option", "", optCfg.text);
+    opt.value = optCfg.value;
+    dirSelect.appendChild(opt);
+  });
+  dirLabel.appendChild(dirSelect);
+
+  const onlyHitLabel = createElement("label", "tailflow-label tailflow-checkbox-label");
+  const onlyHitInput = createElement("input");
+  onlyHitInput.type = "checkbox";
+  onlyHitLabel.appendChild(onlyHitInput);
+  const onlyHitText = createElement("span", "", "只顯示 hit > 0");
+  onlyHitLabel.appendChild(onlyHitText);
+
+  controlBar.appendChild(targetLabel);
+  controlBar.appendChild(distLabel);
+  controlBar.appendChild(dirLabel);
+  controlBar.appendChild(onlyHitLabel);
+
+  const tableContainer = createElement("div", "tailflow-table-container");
+
+  container.appendChild(controlBar);
+  container.appendChild(tableContainer);
+  tailPane.appendChild(container);
+
+  const state = {
+    targetTail: 5,
+    maxDistance: 4,
+    dirFilter: "all",
+    onlyHit: false,
+  };
+
+  const filterDir = (dirId) => {
+    if (state.dirFilter === "all") return true;
+    if (state.dirFilter === "straight") {
+      return dirId === "R" || dirId === "L" || dirId === "U" || dirId === "D";
+    }
+    if (state.dirFilter === "diag") {
+      return dirId === "UR" || dirId === "UL" || dirId === "DR" || dirId === "DL";
+    }
+    return true;
+  };
+
+  const render = () => {
+    const targetTail = state.targetTail;
+    const rows = getAdjTailRowsForTarget(targetTail) || [];
+    const filtered = rows.filter((r) => {
+      if (r.distance > state.maxDistance) return false;
+      if (!filterDir(r.dirId)) return false;
+      if (state.onlyHit && r.hit <= 0) return false;
+      return true;
+    });
+
+    tableContainer.innerHTML = "";
+    const table = createElement("table", "tailflow-table");
+    const thead = createElement("thead");
+    const headRow = createElement("tr");
+    ["目標尾號", "起點尾號", "方向", "距離", "hit", "score"].forEach((t) => {
+      const th = createElement("th", "", t);
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    const tbody = createElement("tbody");
+    filtered.forEach((r) => {
+      const tr = createElement("tr");
+      const tdTarget = createElement("td", "", String(r.targetTail));
+      const tdFrom = createElement("td", "", String(r.fromTail));
+      const tdDir = createElement("td", "", TAILFLOW_DIR_LABELS[r.dirId] || r.dirId);
+      const tdDist = createElement("td", "", `${r.distance}`);
+      const tdHit = createElement("td", "", `${r.hit}`);
+      const tdScore = createElement("td", "", r.score.toFixed(2));
+
+      tr.appendChild(tdTarget);
+      tr.appendChild(tdFrom);
+      tr.appendChild(tdDir);
+      tr.appendChild(tdDist);
+      tr.appendChild(tdHit);
+      tr.appendChild(tdScore);
+
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    tableContainer.appendChild(table);
+  };
+
+  targetSelect.addEventListener("change", () => {
+    state.targetTail = Number(targetSelect.value);
+    render();
+  });
+  distSelect.addEventListener("change", () => {
+    state.maxDistance = Number(distSelect.value);
+    render();
+  });
+  dirSelect.addEventListener("change", () => {
+    state.dirFilter = dirSelect.value;
+    render();
+  });
+  onlyHitInput.addEventListener("change", () => {
+    state.onlyHit = !!onlyHitInput.checked;
+    render();
+  });
+
+  render();
+
+  return render;
+}
+
 
 function buildPositionStats(candidates, kind) {
   // kind: "major" | "minor"
@@ -426,8 +582,14 @@ export function initStats() {
       "stats-subtab-btn",
       "世界模型 v1"
     );
+    const tailTabBtn = createElement(
+      "button",
+      "stats-subtab-btn",
+      "尾號分析 TailFlow"
+    );
     tabsHeader.appendChild(speedTabBtn);
     tabsHeader.appendChild(worldTabBtn);
+    tabsHeader.appendChild(tailTabBtn);
 
     const tabsContent = createElement("div", "stats-subtabs-content");
     const speedPane = createElement(
@@ -435,6 +597,8 @@ export function initStats() {
       "stats-subtab-pane stats-subtab-pane--active"
     );
     const worldPane = createElement("div", "stats-subtab-pane");
+    const tailPane = createElement("div", "stats-subtab-pane");
+
 
     existingChildren.forEach((child) => {
       speedPane.appendChild(child);
@@ -442,26 +606,43 @@ export function initStats() {
 
     tabsContent.appendChild(speedPane);
     tabsContent.appendChild(worldPane);
+    tabsContent.appendChild(tailPane);
 
     inferenceRoot.appendChild(tabsHeader);
     inferenceRoot.appendChild(tabsContent);
 
     // 初始化世界模型畫面（放在右側子頁籤），並取得重新計算函式
     const renderWorldModel = initWorldModelView(worldPane);
+    // 初始化尾號分析 TailFlow 畫面（第三個子頁籤）
+    const renderTailFlow = buildTailFlowPane(tailPane);
 
     const switchTab = (active) => {
       if (active === "speed") {
         speedTabBtn.classList.add("stats-subtab-btn--active");
         worldTabBtn.classList.remove("stats-subtab-btn--active");
+        tailTabBtn.classList.remove("stats-subtab-btn--active");
         speedPane.style.display = "";
         worldPane.style.display = "none";
-      } else {
+        tailPane.style.display = "none";
+      } else if (active === "world") {
         speedTabBtn.classList.remove("stats-subtab-btn--active");
         worldTabBtn.classList.add("stats-subtab-btn--active");
+        tailTabBtn.classList.remove("stats-subtab-btn--active");
         speedPane.style.display = "none";
         worldPane.style.display = "";
+        tailPane.style.display = "none";
         if (typeof renderWorldModel === "function") {
           renderWorldModel();
+        }
+      } else if (active === "tail") {
+        speedTabBtn.classList.remove("stats-subtab-btn--active");
+        worldTabBtn.classList.remove("stats-subtab-btn--active");
+        tailTabBtn.classList.add("stats-subtab-btn--active");
+        speedPane.style.display = "none";
+        worldPane.style.display = "none";
+        tailPane.style.display = "";
+        if (typeof renderTailFlow === "function") {
+          renderTailFlow();
         }
       }
     };
@@ -469,6 +650,7 @@ export function initStats() {
     switchTab("speed");
     speedTabBtn.onclick = () => switchTab("speed");
     worldTabBtn.onclick = () => switchTab("world");
+    tailTabBtn.onclick = () => switchTab("tail");
 
   }
 }
