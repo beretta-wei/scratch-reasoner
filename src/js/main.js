@@ -3,6 +3,7 @@ import { initControls } from "./ui/controlsView.js";
 import { initGrid } from "./ui/gridView.js";
 import { initStats } from "./ui/statsView.js";
 import { initNumberPad } from "./ui/numberPadView.js";
+import { initAdjTailModel } from "./core/adjTailModel.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   initLogStore();
@@ -10,6 +11,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initGrid();
   initStats();
   initNumberPad();
+  initAdjTailModel();
 });
 
   // Auto-restore active log after UI init
