@@ -457,3 +457,90 @@ body {
 .stats-subtab-pane {
   /* 由 JS 控制 display，預設顯示 */
 }
+
+
+/* TailFlow (尾號分析) 專用樣式 */
+.tailflow-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+  padding: var(--gap-md);
+  background: #020617;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.tailflow-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-md);
+  align-items: center;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--gap-sm);
+}
+
+.tailflow-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tailflow-select {
+  background: #020617;
+  color: var(--text);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.tailflow-checkbox-label input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+.tailflow-table-container {
+  max-height: 260px;
+  overflow: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: #020617;
+}
+
+.tailflow-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.tailflow-table th,
+.tailflow-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #111827;
+}
+
+.tailflow-table thead {
+  position: sticky;
+  top: 0;
+  background: #0b1120;
+  z-index: 1;
+}
+
+.tailflow-table th {
+  text-align: left;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.tailflow-table tbody tr:nth-child(odd) {
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.tailflow-table tbody tr:nth-child(even) {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.tailflow-table tbody tr:hover {
+  background: rgba(249, 115, 22, 0.12);
+}
