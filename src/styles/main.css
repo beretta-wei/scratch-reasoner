@@ -544,3 +544,57 @@ body {
 .tailflow-table tbody tr:hover {
   background: rgba(249, 115, 22, 0.12);
 }
+
+
+/* TailFlow 內部子視圖 tabs 與 heatmap 樣式 */
+.tailflow-views-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+.tailflow-view-tab {
+  border: 1px solid var(--border-subtle);
+  background: #020617;
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.tailflow-view-tab--active {
+  color: var(--accent-strong);
+  border-color: var(--accent-soft);
+  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35);
+}
+
+.tailflow-view {
+  margin-top: 4px;
+}
+
+.tailflow-top-controls {
+  display: flex;
+  justify-content: flex-start;
+  padding: 4px 0;
+}
+
+.tailflow-heatmap-grid {
+  margin-top: 6px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  padding: 4px;
+  background: #020617;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.tailflow-heat-cell {
+  min-height: 20px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+}
