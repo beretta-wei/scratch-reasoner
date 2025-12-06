@@ -546,55 +546,51 @@ body {
 }
 
 
-/* TailFlow 內部子視圖 tabs 與 heatmap 樣式 */
-.tailflow-views-tabs {
-  display: flex;
-  gap: 6px;
-  margin-top: 8px;
-  margin-bottom: 6px;
-}
-
-.tailflow-view-tab {
+/* TailFlow v2 sections, TopN, Heatmap */
+.tailflow-section {
+  margin-top: var(--gap-md);
   border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--gap-md);
   background: #020617;
+}
+
+.tailflow-section-title {
+  font-size: 0.85rem;
+  font-weight: 600;
   color: var(--text-muted);
-  border-radius: var(--radius-md);
-  padding: 4px 10px;
-  font-size: 0.78rem;
-  cursor: pointer;
+  margin-bottom: var(--gap-sm);
 }
 
-.tailflow-view-tab--active {
-  color: var(--accent-strong);
-  border-color: var(--accent-soft);
-  box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.35);
-}
-
-.tailflow-view {
-  margin-top: 4px;
+.tailflow-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--gap-sm);
 }
 
 .tailflow-top-controls {
   display: flex;
-  justify-content: flex-start;
-  padding: 4px 0;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.tailflow-heatmap-container {
+  max-height: 260px;
+  overflow: auto;
 }
 
 .tailflow-heatmap-grid {
-  margin-top: 6px;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-subtle);
-  padding: 4px;
-  background: #020617;
-  max-height: 320px;
-  overflow: auto;
+  display: grid;
+  gap: 2px;
 }
 
 .tailflow-heat-cell {
   min-height: 20px;
   font-size: 0.7rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
+  line-height: 1.2;
   border-radius: 3px;
 }

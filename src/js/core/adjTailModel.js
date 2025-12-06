@@ -103,7 +103,7 @@ export function recomputeAdjTailStatsFromState() {
         rec.hit += 1;
         rec.score += 1;
 
-        // 其它方向：只做平滑分數 +0.1，不增加 hit
+        // 其它方向：只做平滑分數 +0.25，不增加 hit
         for (const other of DIRECTIONS) {
           if (other.id === dir.id) continue;
           const recOther = ensureRecord(stats, targetTail, fromTail, other.id, dist);
@@ -180,10 +180,8 @@ export function scoreCellForTargetTail(index, targetTail, maxDistance = 4) {
 
   let totalScore = 0;
 
-  const effectiveMaxDist = !Number.isFinite(maxDistance) ? Math.max(rows, cols) : maxDistance;
-
   for (const dir of DIRECTIONS) {
-    for (let dist = 1; dist <= effectiveMaxDist; dist++) {
+    for (let dist = 1; dist <= maxDistance; dist++) {
       const r2 = row + dir.dy * dist;
       const c2 = col + dir.dx * dist;
       if (r2 < 0 || r2 >= rows || c2 < 0 || c2 >= cols) break;
