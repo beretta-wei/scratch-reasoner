@@ -594,3 +594,43 @@ body {
   line-height: 1.2;
   border-radius: 3px;
 }
+
+
+/* Monte Carlo baseline (MC 基準) 專用樣式 */
+.mc-root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+}
+
+.mc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.mc-label span {
+  margin-right: 4px;
+}
+
+.mc-status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.mc-result-wrapper {
+  margin-top: 8px;
+}
+
+.mc-table {
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.mc-table td {
+  border: 1px solid #1f2937;
+  padding: 2px 4px;
+  text-align: right;
+}

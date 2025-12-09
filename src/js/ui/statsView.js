@@ -6,6 +6,7 @@ import { runSpeedReverse } from "../core/speedReverse.js";
 import { generatePermutationFromSpeed } from "../core/speedEngine.js";
 import { initWorldModelView } from "./worldModelView.js";
 import { getAdjTailRowsForTarget, scoreAllCellsForTargetTail } from "../core/adjTailModel.js";
+import { runMonteCarloBaseline } from "../core/mcBaselineModel.js";
 
 let lastCandidates = null;
 
@@ -19,6 +20,130 @@ const TAILFLOW_DIR_LABELS = {
   DR: "右下",
   DL: "左下",
 };
+
+
+
+function buildMcBaselinePane(mcPane) {
+  if (!mcPane) return () => {};
+
+  mcPane.innerHTML = "";
+
+  const container = createElement("div", "mc-root");
+  const controls = createElement("div", "mc-controls");
+  const resultWrapper = createElement("div", "mc-result-wrapper");
+  const statusLine = createElement("div", "mc-status");
+
+  const state = store.getState();
+  const totalCells = state.rows * state.cols;
+
+  // 大獎號輸入
+  const prizeLabel = createElement("label", "mc-label");
+  const prizeText = createElement("span", "", "大獎號：");
+  const prizeInput = createElement("input", "input");
+  prizeInput.type = "number";
+  prizeInput.min = "1";
+  prizeInput.max = String(totalCells);
+  prizeInput.value = "88";
+  prizeInput.style.width = "80px";
+  prizeLabel.appendChild(prizeText);
+  prizeLabel.appendChild(prizeInput);
+
+  // 每方向模擬次數
+  const runsLabel = createElement("label", "mc-label");
+  const runsText = createElement("span", "", "每方向模擬次數：");
+  const runsInput = createElement("input", "input");
+  runsInput.type = "number";
+  runsInput.min = "100";
+  runsInput.max = "50000";
+  runsInput.value = "5000";
+  runsInput.style.width = "100px";
+  runsLabel.appendChild(runsText);
+  runsLabel.appendChild(runsInput);
+
+  const runBtn = createElement("button", "btn-primary", "開始 Monte Carlo");
+  runBtn.type = "button";
+
+  controls.appendChild(prizeLabel);
+  controls.appendChild(runsLabel);
+  controls.appendChild(runBtn);
+
+  container.appendChild(controls);
+  container.appendChild(statusLine);
+  container.appendChild(resultWrapper);
+  mcPane.appendChild(container);
+
+  function renderTable(probabilities) {
+    resultWrapper.innerHTML = "";
+
+    if (!probabilities || !probabilities.length) {
+      const empty = createElement("div", "stats-placeholder", "尚未有模擬結果");
+      resultWrapper.appendChild(empty);
+      return;
+    }
+
+    const rows = probabilities.length;
+    const cols = probabilities[0].length;
+
+    const table = createElement("table", "mc-table");
+    const tbody = createElement("tbody");
+
+    for (let r = 0; r < rows; r++) {
+      const tr = document.createElement("tr");
+      for (let c = 0; c < cols; c++) {
+        const td = document.createElement("td");
+        const p = probabilities[r][c] * 100;
+        td.textContent = p.toFixed(2) + "%";
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+
+    table.appendChild(tbody);
+    resultWrapper.appendChild(table);
+  }
+
+  runBtn.onclick = () => {
+    const currentState = store.getState();
+    const rows = currentState.rows;
+    const cols = currentState.cols;
+    const total = rows * cols;
+
+    const big = Number(prizeInput.value);
+    const runs = Number(runsInput.value);
+
+    if (!Number.isInteger(big) || big < 1 || big > total) {
+      statusLine.textContent = `大獎號必須介於 1 ~ ${total}`;
+      return;
+    }
+    if (!Number.isFinite(runs) || runs <= 0) {
+      statusLine.textContent = "請輸入有效的模擬次數（例如 1000、5000）";
+      return;
+    }
+
+    statusLine.textContent = "模擬中，可能需要一點時間…";
+    resultWrapper.innerHTML = "";
+
+    setTimeout(() => {
+      try {
+        const { probabilities, totalRuns } = runMonteCarloBaseline({
+          rows,
+          cols,
+          bigNumber: big,
+          runsPerDirection: runs,
+        });
+        statusLine.textContent = `完成：共 ${totalRuns} 次模擬（8 個方向 × 每方向 ${runs} 次）。`;
+        renderTable(probabilities);
+      } catch (err) {
+        console.error(err);
+        statusLine.textContent = "模擬發生錯誤：" + err.message;
+      }
+    }, 30);
+  };
+
+  renderTable(null);
+
+  return () => {};
+}
 
 
 function buildTailFlowPane(tailPane) {
@@ -741,9 +866,15 @@ export function initStats() {
       "stats-subtab-btn",
       "尾號分析 TailFlow"
     );
+    const mcTabBtn = createElement(
+      "button",
+      "stats-subtab-btn",
+      "MC 基準（亂數）"
+    );
     tabsHeader.appendChild(speedTabBtn);
     tabsHeader.appendChild(worldTabBtn);
     tabsHeader.appendChild(tailTabBtn);
+    tabsHeader.appendChild(mcTabBtn);
 
     const tabsContent = createElement("div", "stats-subtabs-content");
     const speedPane = createElement(
@@ -752,6 +883,7 @@ export function initStats() {
     );
     const worldPane = createElement("div", "stats-subtab-pane");
     const tailPane = createElement("div", "stats-subtab-pane");
+    const mcPane = createElement("div", "stats-subtab-pane");
 
 
     existingChildren.forEach((child) => {
@@ -761,6 +893,7 @@ export function initStats() {
     tabsContent.appendChild(speedPane);
     tabsContent.appendChild(worldPane);
     tabsContent.appendChild(tailPane);
+    tabsContent.appendChild(mcPane);
 
     inferenceRoot.appendChild(tabsHeader);
     inferenceRoot.appendChild(tabsContent);
@@ -769,22 +902,28 @@ export function initStats() {
     const renderWorldModel = initWorldModelView(worldPane);
     // 初始化尾號分析 TailFlow 畫面（第三個子頁籤）
     const renderTailFlow = buildTailFlowPane(tailPane);
+    // 初始化 Monte Carlo baseline 畫面（第四個子頁籤）
+    const renderMcBaseline = buildMcBaselinePane(mcPane);
 
     const switchTab = (active) => {
       if (active === "speed") {
         speedTabBtn.classList.add("stats-subtab-btn--active");
         worldTabBtn.classList.remove("stats-subtab-btn--active");
         tailTabBtn.classList.remove("stats-subtab-btn--active");
+        mcTabBtn.classList.remove("stats-subtab-btn--active");
         speedPane.style.display = "";
         worldPane.style.display = "none";
         tailPane.style.display = "none";
+        mcPane.style.display = "none";
       } else if (active === "world") {
         speedTabBtn.classList.remove("stats-subtab-btn--active");
         worldTabBtn.classList.add("stats-subtab-btn--active");
         tailTabBtn.classList.remove("stats-subtab-btn--active");
+        mcTabBtn.classList.remove("stats-subtab-btn--active");
         speedPane.style.display = "none";
         worldPane.style.display = "";
         tailPane.style.display = "none";
+        mcPane.style.display = "none";
         if (typeof renderWorldModel === "function") {
           renderWorldModel();
         }
@@ -792,11 +931,25 @@ export function initStats() {
         speedTabBtn.classList.remove("stats-subtab-btn--active");
         worldTabBtn.classList.remove("stats-subtab-btn--active");
         tailTabBtn.classList.add("stats-subtab-btn--active");
+        mcTabBtn.classList.remove("stats-subtab-btn--active");
         speedPane.style.display = "none";
         worldPane.style.display = "none";
         tailPane.style.display = "";
+        mcPane.style.display = "none";
         if (typeof renderTailFlow === "function") {
           renderTailFlow();
+        }
+      } else if (active === "mc") {
+        speedTabBtn.classList.remove("stats-subtab-btn--active");
+        worldTabBtn.classList.remove("stats-subtab-btn--active");
+        tailTabBtn.classList.remove("stats-subtab-btn--active");
+        mcTabBtn.classList.add("stats-subtab-btn--active");
+        speedPane.style.display = "none";
+        worldPane.style.display = "none";
+        tailPane.style.display = "none";
+        mcPane.style.display = "";
+        if (typeof renderMcBaseline === "function") {
+          renderMcBaseline();
         }
       }
     };
@@ -805,6 +958,7 @@ export function initStats() {
     speedTabBtn.onclick = () => switchTab("speed");
     worldTabBtn.onclick = () => switchTab("world");
     tailTabBtn.onclick = () => switchTab("tail");
+    mcTabBtn.onclick = () => switchTab("mc");
 
   }
 }
