@@ -648,3 +648,35 @@ body {
 .mc-list-item {
   line-height: 1.4;
 }
+
+
+/* MC table list */
+.mc-table-wrapper {
+  max-height: 360px;
+  overflow-y: auto;
+  border:1px solid #444;
+  margin-top:10px;
+}
+
+.mc-table-list {
+  width:100%;
+  border-collapse: collapse;
+  font-family: Consolas, monospace;
+  font-size:13px;
+}
+
+.mc-table-list th {
+  background:#2d2d2d;
+  color:white;
+  padding:4px 8px;
+  text-align:left;
+}
+
+.mc-table-list td {
+  border-bottom:1px solid #444;
+  padding:4px 8px;
+}
+
+.mc-table-list tbody tr:hover {
+  background:#3a3a3a;
+}

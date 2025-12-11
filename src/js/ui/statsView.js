@@ -31,7 +31,7 @@ function buildMcBaselinePane(mcPane) {
 
   const container = createElement("div", "mc-root");
   const controls = createElement("div", "mc-controls");
-  const resultWrapper = createElement("div", "mc-result-wrapper");
+  const resultWrapper = createElement("div", "mc-table-wrapper");
   const statusLine = createElement("div", "mc-status");
 
   const state = store.getState();
@@ -39,33 +39,31 @@ function buildMcBaselinePane(mcPane) {
 
   // 大獎號輸入
   const prizeLabel = createElement("label", "mc-label");
-  const prizeText = createElement("span", "", "大獎號：");
-  const prizeInput = createElement("input", "input");
-  prizeInput.type = "number";
-  prizeInput.min = "1";
-  prizeInput.max = String(totalCells);
-  prizeInput.value = "88";
-  prizeInput.style.width = "80px";
-  prizeLabel.appendChild(prizeText);
+  prizeLabel.appendChild(createElement("span","", "大獎號："));
+  const prizeInput = createElement("input","input");
+  prizeInput.type="number";
+  prizeInput.min="1";
+  prizeInput.max=String(totalCells);
+  prizeInput.value="88";
+  prizeInput.style.width="80px";
   prizeLabel.appendChild(prizeInput);
 
   // 每方向模擬次數
-  const runsLabel = createElement("label", "mc-label");
-  const runsText = createElement("span", "", "每方向模擬次數：");
-  const runsInput = createElement("input", "input");
-  runsInput.type = "number";
-  runsInput.min = "100";
-  runsInput.max = "50000";
-  runsInput.value = "5000";
-  runsInput.style.width = "100px";
-  runsLabel.appendChild(runsText);
-  runsLabel.appendChild(runsInput);
+  const runLabel = createElement("label","mc-label");
+  runLabel.appendChild(createElement("span","", "每方向模擬次數："));
+  const runInput = createElement("input","input");
+  runInput.type="number";
+  runInput.min="100";
+  runInput.max="50000";
+  runInput.value="5000";
+  runInput.style.width="100px";
+  runLabel.appendChild(runInput);
 
-  const runBtn = createElement("button", "btn-primary", "開始 Monte Carlo");
-  runBtn.type = "button";
+  const runBtn = createElement("button","btn-primary","開始 Monte Carlo");
+  runBtn.type="button";
 
   controls.appendChild(prizeLabel);
-  controls.appendChild(runsLabel);
+  controls.appendChild(runLabel);
   controls.appendChild(runBtn);
 
   container.appendChild(controls);
@@ -73,76 +71,78 @@ function buildMcBaselinePane(mcPane) {
   container.appendChild(resultWrapper);
   mcPane.appendChild(container);
 
-  function renderList(rankedCells, rows, cols) {
-    resultWrapper.innerHTML = "";
+  function renderTable(ranked) {
+    resultWrapper.innerHTML="";
 
-    if (!rankedCells || rankedCells.length === 0) {
-      const empty = createElement(
-        "div",
-        "stats-placeholder",
-        "尚未有模擬結果，或所有格子皆已刮開。"
-      );
-      resultWrapper.appendChild(empty);
+    if (!ranked || ranked.length===0) {
+      resultWrapper.appendChild(createElement("div","stats-placeholder",
+        "尚未有模擬結果（可能全部已刮開）"));
       return;
     }
 
-    const list = createElement("ol", "mc-list");
-    rankedCells.forEach((item, index) => {
-      const li = createElement("li", "mc-list-item");
-      const rowLabel = item.r + 1;
-      const colLabel = item.c + 1;
-      const percent = (item.p * 100).toFixed(2);
-      li.textContent = `${index + 1}. R${rowLabel}-C${colLabel}：${percent}%`;
-      list.appendChild(li);
+    const table = createElement("table","mc-table-list");
+    table.innerHTML = `
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>位置</th>
+          <th>機率</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    `;
+    const tbody = table.querySelector("tbody");
+
+    ranked.forEach((item, idx)=>{
+      const tr=document.createElement("tr");
+      const pos=`R${item.r+1}-C${item.c+1}`;
+      const pct=(item.p*100).toFixed(2) + "%";
+      tr.innerHTML = `<td>${idx+1}</td><td>${pos}</td><td>${pct}</td>`;
+      tbody.appendChild(tr);
     });
 
-    resultWrapper.appendChild(list);
+    resultWrapper.appendChild(table);
   }
 
   runBtn.onclick = () => {
-    const currentState = store.getState();
-    const rows = currentState.rows;
-    const cols = currentState.cols;
-    const total = rows * cols;
+    const st = store.getState();
+    const rows=st.rows, cols=st.cols;
+    const total=rows*cols;
 
     const big = Number(prizeInput.value);
-    const runs = Number(runsInput.value);
+    const runs = Number(runInput.value);
 
-    if (!Number.isInteger(big) || big < 1 || big > total) {
+    if (!(big>=1 && big<=total)) {
       statusLine.textContent = `大獎號必須介於 1 ~ ${total}`;
       return;
     }
-    if (!Number.isFinite(runs) || runs <= 0) {
-      statusLine.textContent = "請輸入有效的模擬次數（例如 1000、5000）";
+    if (!(runs>0)) {
+      statusLine.textContent = "模擬次數需大於 0";
       return;
     }
 
-    statusLine.textContent = "模擬中，可能需要一點時間…";
-    resultWrapper.innerHTML = "";
+    statusLine.textContent = "模擬中…";
+    resultWrapper.innerHTML="";
 
-    setTimeout(() => {
-      try {
+    setTimeout(()=>{
+      try{
         const { rankedCells, totalRuns } = runMonteCarloBaseline({
-          rows,
-          cols,
+          rows, cols,
           bigNumber: big,
-          runsPerDirection: runs,
+          runsPerDirection: runs
         });
-        statusLine.textContent = `完成：共 ${totalRuns} 次模擬（8 個方向 × 每方向 ${runs} 次）。`;
-        renderList(rankedCells, rows, cols);
-      } catch (err) {
+        statusLine.textContent = `完成：共 ${totalRuns} 次模擬`;
+        renderTable(rankedCells);
+      }catch(err){
         console.error(err);
-        statusLine.textContent = "模擬發生錯誤：" + err.message;
+        statusLine.textContent="模擬錯誤：" + err.message;
       }
-    }, 30);
+    },20);
   };
 
-  // 初始顯示空內容
-  renderList(null, state.rows, state.cols);
-
-  return () => {};
+  renderTable(null);
+  return ()=>{};
 }
-
 function buildTailFlowPane(tailPane) {
   if (!tailPane) return () => {};
 
