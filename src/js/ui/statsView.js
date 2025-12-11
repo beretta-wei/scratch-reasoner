@@ -23,6 +23,7 @@ const TAILFLOW_DIR_LABELS = {
 
 
 
+
 function buildMcBaselinePane(mcPane) {
   if (!mcPane) return () => {};
 
@@ -72,34 +73,30 @@ function buildMcBaselinePane(mcPane) {
   container.appendChild(resultWrapper);
   mcPane.appendChild(container);
 
-  function renderTable(probabilities) {
+  function renderList(rankedCells, rows, cols) {
     resultWrapper.innerHTML = "";
 
-    if (!probabilities || !probabilities.length) {
-      const empty = createElement("div", "stats-placeholder", "尚未有模擬結果");
+    if (!rankedCells || rankedCells.length === 0) {
+      const empty = createElement(
+        "div",
+        "stats-placeholder",
+        "尚未有模擬結果，或所有格子皆已刮開。"
+      );
       resultWrapper.appendChild(empty);
       return;
     }
 
-    const rows = probabilities.length;
-    const cols = probabilities[0].length;
+    const list = createElement("ol", "mc-list");
+    rankedCells.forEach((item, index) => {
+      const li = createElement("li", "mc-list-item");
+      const rowLabel = item.r + 1;
+      const colLabel = item.c + 1;
+      const percent = (item.p * 100).toFixed(2);
+      li.textContent = `${index + 1}. R${rowLabel}-C${colLabel}：${percent}%`;
+      list.appendChild(li);
+    });
 
-    const table = createElement("table", "mc-table");
-    const tbody = createElement("tbody");
-
-    for (let r = 0; r < rows; r++) {
-      const tr = document.createElement("tr");
-      for (let c = 0; c < cols; c++) {
-        const td = document.createElement("td");
-        const p = probabilities[r][c] * 100;
-        td.textContent = p.toFixed(2) + "%";
-        tr.appendChild(td);
-      }
-      tbody.appendChild(tr);
-    }
-
-    table.appendChild(tbody);
-    resultWrapper.appendChild(table);
+    resultWrapper.appendChild(list);
   }
 
   runBtn.onclick = () => {
@@ -125,14 +122,14 @@ function buildMcBaselinePane(mcPane) {
 
     setTimeout(() => {
       try {
-        const { probabilities, totalRuns } = runMonteCarloBaseline({
+        const { rankedCells, totalRuns } = runMonteCarloBaseline({
           rows,
           cols,
           bigNumber: big,
           runsPerDirection: runs,
         });
         statusLine.textContent = `完成：共 ${totalRuns} 次模擬（8 個方向 × 每方向 ${runs} 次）。`;
-        renderTable(probabilities);
+        renderList(rankedCells, rows, cols);
       } catch (err) {
         console.error(err);
         statusLine.textContent = "模擬發生錯誤：" + err.message;
@@ -140,11 +137,11 @@ function buildMcBaselinePane(mcPane) {
     }, 30);
   };
 
-  renderTable(null);
+  // 初始顯示空內容
+  renderList(null, state.rows, state.cols);
 
   return () => {};
 }
-
 
 function buildTailFlowPane(tailPane) {
   if (!tailPane) return () => {};

@@ -634,3 +634,17 @@ body {
   padding: 2px 4px;
   text-align: right;
 }
+
+
+/* Monte Carlo baseline 列表樣式 */
+.mc-list {
+  margin-top: 8px;
+  padding-left: 20px;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 12px;
+}
+
+.mc-list-item {
+  line-height: 1.4;
+}

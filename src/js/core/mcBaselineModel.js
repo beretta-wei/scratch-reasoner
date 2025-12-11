@@ -126,6 +126,7 @@ function fisherYatesShuffle(arr) {
  * @param {number} options.runsPerDirection - 每個方向模擬次數
  * @returns {{ hitCount: number[][], probabilities: number[][], totalRuns: number }}
  */
+
 export function runMonteCarloBaseline(options) {
   const state = store.getState();
   const rows = options?.rows ?? state.rows;
@@ -146,6 +147,7 @@ export function runMonteCarloBaseline(options) {
     Array.from({ length: cols }, () => 0)
   );
 
+  // Monte Carlo：在 8 個方向下，對 bigNumber 進行基準模擬
   for (let d = 0; d < dirCount; d++) {
     const path = paths[d];
 
@@ -169,13 +171,63 @@ export function runMonteCarloBaseline(options) {
   }
 
   const totalRuns = runsPerDirection * dirCount;
-  const probabilities = hitCount.map((row) =>
+
+  // 原始機率（未考慮已刮格子）
+  const baseProbabilities = hitCount.map((row) =>
     row.map((cnt) => (totalRuns > 0 ? cnt / totalRuns : 0))
   );
 
+  // 依照「目前盤面」調整：
+  // - 已刮格子（revealed = true）機率強制 0
+  // - 剩餘格子重新正規化，總和 = 1
+  const cells = state.cells || [];
+  const normProbabilities = Array.from({ length: rows }, () =>
+    Array.from({ length: cols }, () => 0)
+  );
+
+  let sumRemaining = 0;
+  const baseEffective = [];
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const idx = r * cols + c;
+      const cell = cells[idx];
+      const revealed = cell ? !!cell.revealed : false;
+      const baseP = baseProbabilities[r][c];
+
+      const effectiveP = revealed ? 0 : baseP;
+      baseEffective.push({ r, c, p: effectiveP, revealed });
+
+      if (!revealed) {
+        sumRemaining += effectiveP;
+      }
+    }
+  }
+
+  // 正規化：讓所有「未刮」格子的機率總和 = 1
+  const rankedCells = [];
+  if (sumRemaining > 0) {
+    for (const item of baseEffective) {
+      const { r, c, p, revealed } = item;
+      if (!revealed && p > 0) {
+        const normalized = p / sumRemaining;
+        normProbabilities[r][c] = normalized;
+        rankedCells.push({ r, c, p: normalized });
+      } else {
+        normProbabilities[r][c] = 0;
+      }
+    }
+  }
+
+  // 依照機率由大到小排序（只保留未刮且機率 > 0 的格子）
+  rankedCells.sort((a, b) => b.p - a.p);
+
   return {
     hitCount,
-    probabilities,
+    baseProbabilities,
+    normProbabilities,
+    rankedCells,
     totalRuns,
   };
 }
+
