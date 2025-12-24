@@ -3,6 +3,7 @@ import { store } from "./state.js";
 const LS_NAMES_KEY = "scratchReasoner.logNames";
 const LS_LOGS_KEY = "scratchReasoner.logs";
 const LS_ACTIVE_KEY = "scratchReasoner.activeLogId";
+const LS_CURRENT_LABEL_KEY = "scratchReasoner.currentLabelName";
 
 const DEFAULT_LABELS = [
   "阿傑",
@@ -42,11 +43,25 @@ function loadFromStorage() {
   logState.logs = safeParse(localStorage.getItem(LS_LOGS_KEY), []);
   const active = localStorage.getItem(LS_ACTIVE_KEY);
   logState.activeLogId = active || null;
+  const currentLabel = localStorage.getItem(LS_CURRENT_LABEL_KEY);
+  if (currentLabel) {
+    logState.currentLabelName = currentLabel;
+  }
 }
 
 function saveNames() {
   if (typeof localStorage === "undefined") return;
   localStorage.setItem(LS_NAMES_KEY, JSON.stringify(logState.labelNames));
+}
+
+function saveCurrentLabelName() {
+  if (typeof localStorage === "undefined") return;
+  const name = (logState.currentLabelName || "").trim();
+  if (name) {
+    localStorage.setItem(LS_CURRENT_LABEL_KEY, name);
+  } else {
+    localStorage.removeItem(LS_CURRENT_LABEL_KEY);
+  }
 }
 
 function saveLogsAndActive() {
@@ -84,6 +99,32 @@ function snapshotStateToActiveLog() {
 export function initLogStore() {
   loadFromStorage();
 
+  const derivedLabels = Array.from(
+    new Set(
+      (logState.logs || [])
+        .map(l => (l && l.labelName ? String(l.labelName).trim() : ""))
+        .filter(Boolean)
+    )
+  );
+
+  if (!logState.labelNames || logState.labelNames.length === 0) {
+    logState.labelNames = derivedLabels.length ? derivedLabels : [...DEFAULT_LABELS];
+    saveNames();
+  } else if (derivedLabels.length) {
+    const merged = Array.from(new Set([...logState.labelNames, ...derivedLabels]));
+    if (merged.length !== logState.labelNames.length) {
+      logState.labelNames = merged;
+      saveNames();
+    }
+  }
+
+  if (logState.activeLogId) {
+    const activeLog = logState.logs.find(l => l.id === logState.activeLogId);
+    if (activeLog && activeLog.labelName) {
+      logState.currentLabelName = activeLog.labelName;
+    }
+  }
+
   // 若 storage 中沒有有效名稱，至少要有預設一個
   if (!logState.labelNames || logState.labelNames.length === 0) {
     logState.labelNames = [...DEFAULT_LABELS];
@@ -91,6 +132,11 @@ export function initLogStore() {
   if (!logState.currentLabelName && logState.labelNames.length > 0) {
     logState.currentLabelName = logState.labelNames[0];
   }
+  if (logState.currentLabelName && !logState.labelNames.includes(logState.currentLabelName)) {
+    logState.labelNames.push(logState.currentLabelName);
+    saveNames();
+  }
+  saveCurrentLabelName();
 
   // 監聽 grid 狀態變化，自動同步到目前 Log
   store.subscribe(() => {
@@ -109,7 +155,14 @@ export function getLogState() {
 }
 
 export function setCurrentLabelName(name) {
-  logState.currentLabelName = name;
+  const trimmed = (name || "").trim();
+  if (!trimmed) return;
+  if (!logState.labelNames.includes(trimmed)) {
+    logState.labelNames.push(trimmed);
+    saveNames();
+  }
+  logState.currentLabelName = trimmed;
+  saveCurrentLabelName();
 }
 
 export function addLabelName(name) {
@@ -120,6 +173,7 @@ export function addLabelName(name) {
     saveNames();
   }
   logState.currentLabelName = trimmed;
+  saveCurrentLabelName();
 }
 
 function formatTimestamp(d) {
@@ -178,6 +232,16 @@ export function setActiveLog(logId) {
   if (!log) {
     saveLogsAndActive();
     return;
+  }
+
+  const labelName = (log.labelName || "").trim();
+  if (labelName) {
+    if (!logState.labelNames.includes(labelName)) {
+      logState.labelNames.push(labelName);
+      saveNames();
+    }
+    logState.currentLabelName = labelName;
+    saveCurrentLabelName();
   }
 
   const cells = log.cells || [];
@@ -335,7 +399,9 @@ export function clearAllLogsFromStorage() {
   logState.labelNames = [];
   logState.logs = [];
   logState.activeLogId = null;
+  logState.currentLabelName = "";
   localStorage.removeItem(LS_NAMES_KEY);
   localStorage.removeItem(LS_LOGS_KEY);
   localStorage.removeItem(LS_ACTIVE_KEY);
+  localStorage.removeItem(LS_CURRENT_LABEL_KEY);
 }
