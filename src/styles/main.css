@@ -269,6 +269,18 @@ body {
   font-weight: 600;
 }
 
+.block-analysis-ranges {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.block-analysis-range {
+  line-height: 1.2;
+}
+
 /* ========== Number Pad (底部選號面板) ========== */
 .number-pad-overlay {
   position: fixed;

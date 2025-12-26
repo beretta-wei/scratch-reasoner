@@ -3,6 +3,7 @@ import { $, createElement } from "../utils/dom.js";
 
 const DEFAULT_BLOCK_COLS = 4;
 const DEFAULT_BLOCK_ROWS = 4;
+const DEFAULT_RANGE_SEGMENTS = 3;
 
 function normalizeBlockSize(value, max) {
   let next = Number.parseInt(value, 10);
@@ -13,7 +14,54 @@ function normalizeBlockSize(value, max) {
   return next;
 }
 
-function buildBlockStats({ cols, rows, cells, blockCols, blockRows }) {
+function normalizeRangeSegments(value, max) {
+  let next = Number.parseInt(value, 10);
+  if (!Number.isFinite(next) || next <= 0) next = 1;
+  if (Number.isFinite(max)) {
+    next = Math.min(next, max);
+  }
+  return next;
+}
+
+function getBoardValueRange(cells) {
+  // 盤面數值範圍來自 state（格子總數），避免寫死上限。
+  const total = Array.isArray(cells) ? cells.length : 0;
+  return {
+    min: 1,
+    max: Math.max(1, total)
+  };
+}
+
+function buildRangeSegments(min, max, segments) {
+  // 將完整範圍平均切成 N 段，依序補齊餘數，確保切割結果可重複、可預期。
+  const span = Math.max(0, max - min + 1);
+  const count = normalizeRangeSegments(segments, Math.max(1, span));
+  const baseSize = Math.floor(span / count);
+  const remainder = span % count;
+  const ranges = [];
+  let current = min;
+
+  for (let i = 0; i < count; i += 1) {
+    const extra = i < remainder ? 1 : 0;
+    const size = baseSize + extra;
+    const rangeMin = current;
+    const rangeMax = current + size - 1;
+    ranges.push({ min: rangeMin, max: rangeMax });
+    current = rangeMax + 1;
+  }
+
+  return ranges;
+}
+
+function findRangeIndex(value, ranges) {
+  for (let i = 0; i < ranges.length; i += 1) {
+    const range = ranges[i];
+    if (value >= range.min && value <= range.max) return i;
+  }
+  return -1;
+}
+
+function buildBlockStats({ cols, rows, cells, blockCols, blockRows, ranges }) {
   // 依 blockCols/blockRows 切割盤面，邊界不足完整區塊仍納入計算。
   const blockColumnCount = Math.ceil(cols / blockCols);
   const blockRowCount = Math.ceil(rows / blockRows);
@@ -28,16 +76,24 @@ function buildBlockStats({ cols, rows, cells, blockCols, blockRows }) {
       const total = (endRow - startRow) * (endCol - startCol);
 
       let opened = 0;
+      const rangeCounts = ranges.map(() => 0);
       for (let r = startRow; r < endRow; r += 1) {
         for (let c = startCol; c < endCol; c += 1) {
           const index = r * cols + c;
           if (cells[index] && cells[index].revealed) {
             opened += 1;
+            const value = cells[index].value;
+            if (Number.isFinite(value)) {
+              const rangeIndex = findRangeIndex(value, ranges);
+              if (rangeIndex >= 0) {
+                rangeCounts[rangeIndex] += 1;
+              }
+            }
           }
         }
       }
 
-      blocks.push({ opened, total });
+      blocks.push({ opened, total, rangeCounts });
     }
   }
 
@@ -72,12 +128,22 @@ export function initBlockAnalysis() {
   rowsInput.min = "1";
   rowsInput.step = "1";
 
+  const rangeField = createElement("label", "block-analysis-field");
+  const rangeLabel = createElement("span", "control-label", "區間切割數量");
+  const rangeInput = createElement("input", "block-analysis-input");
+  rangeInput.type = "number";
+  rangeInput.min = "1";
+  rangeInput.step = "1";
+
   colsField.appendChild(colsLabel);
   colsField.appendChild(colsInput);
   rowsField.appendChild(rowsLabel);
   rowsField.appendChild(rowsInput);
+  rangeField.appendChild(rangeLabel);
+  rangeField.appendChild(rangeInput);
   controls.appendChild(colsField);
   controls.appendChild(rowsField);
+  controls.appendChild(rangeField);
 
   const grid = createElement("div", "block-analysis-grid");
 
@@ -88,7 +154,8 @@ export function initBlockAnalysis() {
 
   const state = {
     blockCols: DEFAULT_BLOCK_COLS,
-    blockRows: DEFAULT_BLOCK_ROWS
+    blockRows: DEFAULT_BLOCK_ROWS,
+    rangeSegments: DEFAULT_RANGE_SEGMENTS
   };
 
   const render = () => {
@@ -110,12 +177,26 @@ export function initBlockAnalysis() {
     colsInput.value = String(state.blockCols);
     rowsInput.value = String(state.blockRows);
 
+    const valueRange = getBoardValueRange(cells);
+    const segmentMax = Math.max(1, valueRange.max - valueRange.min + 1);
+    state.rangeSegments = normalizeRangeSegments(state.rangeSegments, segmentMax);
+    rangeInput.max = String(segmentMax);
+    rangeInput.value = String(state.rangeSegments);
+
+    // 依盤面數值範圍動態切割區間，避免固定數值上限。
+    const ranges = buildRangeSegments(
+      valueRange.min,
+      valueRange.max,
+      state.rangeSegments
+    );
+
     const { blocks, blockColumnCount, blockRowCount } = buildBlockStats({
       cols,
       rows,
       cells,
       blockCols: state.blockCols,
-      blockRows: state.blockRows
+      blockRows: state.blockRows,
+      ranges
     });
 
     grid.innerHTML = "";
@@ -139,8 +220,17 @@ export function initBlockAnalysis() {
         `${block.opened} / ${block.total}`
       );
 
+      const rangesWrap = createElement("div", "block-analysis-ranges");
+      ranges.forEach((range, rangeIndex) => {
+        const text = `區間 ${rangeIndex + 1}（${range.min}–${range.max}）：${block.rangeCounts[rangeIndex]}`;
+        rangesWrap.appendChild(
+          createElement("div", "block-analysis-range", text)
+        );
+      });
+
       card.appendChild(label);
       card.appendChild(count);
+      card.appendChild(rangesWrap);
       grid.appendChild(card);
     });
 
@@ -155,6 +245,11 @@ export function initBlockAnalysis() {
 
   rowsInput.addEventListener("change", () => {
     state.blockRows = normalizeBlockSize(rowsInput.value, store.getState().rows);
+    render();
+  });
+
+  rangeInput.addEventListener("input", () => {
+    state.rangeSegments = normalizeRangeSegments(rangeInput.value);
     render();
   });
 
