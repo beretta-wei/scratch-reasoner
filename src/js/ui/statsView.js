@@ -313,7 +313,6 @@ function buildTailFlowPane(tailPane) {
 
 export function initStats() {
   const basicRoot = $("#tab-basic-stats");
-  const heatmapRoot = $("#tab-heatmap");
   const inferenceRoot = $("#tab-inference");
   const legacyRoot = $("#stats-root");
 
@@ -333,19 +332,6 @@ export function initStats() {
 
   renderBasic();
   store.subscribe(renderBasic);
-
-  // Heatmap 佔位
-  if (heatmapRoot) {
-    heatmapRoot.innerHTML = "";
-    const title = createElement("div", "stats-section-title", "Heatmap（待實作）");
-    const placeholder = createElement(
-      "div",
-      "stats-placeholder",
-      "未來會顯示每格可能性強度"
-    );
-    heatmapRoot.appendChild(title);
-    heatmapRoot.appendChild(placeholder);
-  }
 
   // 推理結果：僅保留尾號分析 TailFlow
   if (inferenceRoot) {

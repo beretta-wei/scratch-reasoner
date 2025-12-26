@@ -46,7 +46,7 @@ export function initControls() {
     { id: "tab-settings", label: "盤面設定" },
     { id: "tab-logs", label: "Log 管理" },
     { id: "tab-cloud", label: "雲端Log分析" },
-    { id: "tab-heatmap", label: "Heatmap" },
+    { id: "tab-block-analysis", label: "區塊分析" },
     { id: "tab-inference", label: "推理結果" }
   ];
 

@@ -208,6 +208,67 @@ body {
   opacity: 0.85;
 }
 
+/* Block analysis (區塊分析) */
+.block-analysis-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+  padding: var(--gap-md);
+  background: #020617;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+}
+
+.block-analysis-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-md);
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: var(--gap-sm);
+}
+
+.block-analysis-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.block-analysis-input {
+  width: 90px;
+  background: #020617;
+  color: var(--text);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  padding: 4px 8px;
+  font-size: 0.8rem;
+}
+
+.block-analysis-grid {
+  display: grid;
+  gap: var(--gap-sm);
+}
+
+.block-analysis-card {
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: #0f172a;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.block-analysis-card-title {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.block-analysis-card-value {
+  font-weight: 600;
+}
+
 /* ========== Number Pad (底部選號面板) ========== */
 .number-pad-overlay {
   position: fixed;
